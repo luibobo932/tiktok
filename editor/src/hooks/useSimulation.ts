@@ -46,7 +46,7 @@ async function callOllama(personaId: string, history: ConvEntry[]): Promise<stri
       ? `[Cuộc trò chuyện vừa rồi:]\n${history.map((h) => `- ${h.name}: "${h.text}"`).join('\n')}\n\n`
       : ''
 
-  const userMsg = `/no_think\n${historyText}Bây giờ ${persona.name} nói gì?`
+  const userMsg = `${historyText}Bây giờ ${persona.name} nói gì?`
 
   const res = await fetch(OLLAMA_URL, {
     method: 'POST',
@@ -58,6 +58,7 @@ async function callOllama(personaId: string, history: ConvEntry[]): Promise<stri
         { role: 'user', content: userMsg },
       ],
       stream: false,
+      think: false, // top-level param disables Qwen3 thinking mode
       options: OLLAMA_OPTIONS,
     }),
   })
