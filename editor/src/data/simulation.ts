@@ -26,6 +26,7 @@ export interface ActionItem {
   id: string
   topicTitle: string
   text: string
+  kind?: 'action' | 'insight' // 'action' = việc cần làm; 'insight' = nhận định chiến lược
 }
 
 // ── World positions ──────────────────────────────────────────────────────────

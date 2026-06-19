@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import * as THREE from 'three'
 import { PERSONAS, WAYPOINTS, Problem, ActionItem, PersonaData } from '../data/simulation'
 import { PERSONA_SYSTEM_PROMPTS, PERSONA_EMOJIS, PERSONA_SEVERITY } from '../data/personaPrompts'
-import { AGENDA, SECRETARY_PROMPT, AgendaTopic } from '../data/meetingAgenda'
+import { AGENDA, SECRETARY_PROMPT, OBSERVER_PROMPT, AgendaTopic } from '../data/meetingAgenda'
 import {
   OLLAMA_URL,
   OLLAMA_MODEL,
@@ -105,6 +105,19 @@ ${topicLines.map((l) => `- ${l.name}: ${l.text}`).join('\n')}
 
 Việc cần làm cho trưởng nhóm Duy là gì?`
   let text = await ollamaChat(SECRETARY_PROMPT, user, { temperature: 0.5, num_predict: 70 })
+  text = text.replace(/^[-•\d.\s]+/, '').replace(/^["'"']+|["'"']+$/g, '').trim()
+  return text
+}
+
+// Observer reflects across several action items into one higher-level insight.
+// (Reflection mechanism, à la Stanford "Generative Agents".)
+async function distillInsight(recentActions: string[]): Promise<string> {
+  if (recentActions.length === 0) return ''
+  const user = `Các việc cần làm vừa rút ra từ cuộc họp:
+${recentActions.map((a, i) => `${i + 1}. ${a}`).join('\n')}
+
+Nhận định chiến lược tầm cao cho trưởng nhóm Duy là gì?`
+  let text = await ollamaChat(OBSERVER_PROMPT, user, { temperature: 0.6, num_predict: 80 })
   text = text.replace(/^[-•\d.\s]+/, '').replace(/^["'"']+|["'"']+$/g, '').trim()
   return text
 }
@@ -281,12 +294,34 @@ export function useSimulation() {
             applyState((s) => {
               s.actionItems = [
                 ...s.actionItems,
-                { id: `${Date.now()}-${topic.id}`, topicTitle: topic.title, text: action },
+                { id: `${Date.now()}-${topic.id}`, topicTitle: topic.title, text: action, kind: 'action' },
               ]
             })
           }
         } catch (err) {
           console.warn('[secretary] error:', err)
+        }
+        if (!alive()) break
+
+        // 4) Every 3 topics, observer reflects action items → strategic insight
+        if (topicIdx % 3 === 0) {
+          try {
+            const recent = stateRef.current.actionItems
+              .filter((a) => a.kind !== 'insight')
+              .slice(-3)
+              .map((a) => a.text)
+            const insight = await distillInsight(recent)
+            if (alive() && insight) {
+              applyState((s) => {
+                s.actionItems = [
+                  ...s.actionItems,
+                  { id: `${Date.now()}-insight`, topicTitle: 'Nhận định', text: insight, kind: 'insight' },
+                ]
+              })
+            }
+          } catch (err) {
+            console.warn('[observer] error:', err)
+          }
         }
 
         await sleep(randomBetween(2500, 4500))

@@ -176,9 +176,9 @@ export default function ProblemLog({
             gap: 6,
           }}
         >
-          ✅ Việc cần làm cho Trưởng nhóm
+          ✅ Việc cần làm &amp; 🧠 Nhận định
           <span style={{ marginLeft: 'auto', fontSize: 10, color: '#A1740B', fontWeight: 400 }}>
-            (thư ký AI tổng hợp)
+            (AI tổng hợp)
           </span>
         </div>
         <div ref={actionRef} style={{ overflowY: 'auto', padding: '4px 12px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -187,22 +187,39 @@ export default function ProblemLog({
               Sẽ xuất hiện sau khi nhóm bàn xong mỗi chủ đề.
             </div>
           )}
-          {actionItems.map((a, i) => (
-            <div
-              key={a.id}
-              style={{
-                background: 'rgba(245,158,11,0.1)',
-                border: '1px solid rgba(245,158,11,0.25)',
-                borderRadius: 7,
-                padding: '7px 10px',
-              }}
-            >
-              <div style={{ fontSize: 9, color: '#D9A441', textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 2 }}>
-                {i + 1}. {a.topicTitle}
+          {actionItems.map((a) =>
+            a.kind === 'insight' ? (
+              <div
+                key={a.id}
+                style={{
+                  background: 'rgba(139,92,246,0.12)',
+                  border: '1px solid rgba(139,92,246,0.35)',
+                  borderRadius: 7,
+                  padding: '7px 10px',
+                }}
+              >
+                <div style={{ fontSize: 9, color: '#C4B5FD', textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 2 }}>
+                  🧠 Nhận định chiến lược
+                </div>
+                <div style={{ fontSize: 12, color: '#E9D5FF', lineHeight: 1.45, fontStyle: 'italic' }}>{a.text}</div>
               </div>
-              <div style={{ fontSize: 12, color: '#FDE9C0', lineHeight: 1.45 }}>→ {a.text}</div>
-            </div>
-          ))}
+            ) : (
+              <div
+                key={a.id}
+                style={{
+                  background: 'rgba(245,158,11,0.1)',
+                  border: '1px solid rgba(245,158,11,0.25)',
+                  borderRadius: 7,
+                  padding: '7px 10px',
+                }}
+              >
+                <div style={{ fontSize: 9, color: '#D9A441', textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 2 }}>
+                  {a.topicTitle}
+                </div>
+                <div style={{ fontSize: 12, color: '#FDE9C0', lineHeight: 1.45 }}>→ {a.text}</div>
+              </div>
+            ),
+          )}
         </div>
       </div>
     </div>
