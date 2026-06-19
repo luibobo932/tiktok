@@ -19,6 +19,13 @@ export interface Problem {
   message: string
   severity: 'low' | 'medium' | 'high'
   emoji: string
+  topicTitle?: string
+}
+
+export interface ActionItem {
+  id: string
+  topicTitle: string
+  text: string
 }
 
 // ── World positions ──────────────────────────────────────────────────────────

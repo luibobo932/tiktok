@@ -1,0 +1,66 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Agenda họp phát triển nhóm Bom Tấn — dựng từ tình hình & "hàm ý quản trị" thật.
+// Mỗi chủ đề: trưởng nhóm mở → các thành viên liên quan góp ý → thư ký rút việc cần làm.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface AgendaTopic {
+  id: string
+  title: string // hiển thị trên UI
+  focus: string // ngữ cảnh đưa vào prompt — đang đào sâu điều gì
+  opener: string // gợi ý cách trưởng nhóm mở chủ đề
+  participants: string[] // persona id nên góp ý (ngoài trưởng nhóm 'duc')
+}
+
+export const AGENDA: AgendaTopic[] = [
+  {
+    id: 'pipeline',
+    title: 'Pipeline & doanh số tháng',
+    focus:
+      'Năm 2026 nhiều người chưa chốt căn nào. Cần số thật: tuần này mỗi người có mấy khách, căn nào sắp chốt, và làm gì để ra giao dịch trong 30 ngày tới. Mục tiêu nhóm 1.5 tỷ/quý.',
+    opener: 'Yêu cầu từng người báo số thật: tuần này mấy khách, căn nào sắp chốt, vướng ở đâu.',
+    participants: ['huong', 'tuan', 'luan', 'khoa'],
+  },
+  {
+    id: 'closing-skill',
+    title: 'Kỹ năng chốt & kèm người mới',
+    focus:
+      'Khoa vừa bể hồ sơ vì không báo Duy sớm; Luân còn phải bám Duy mỗi khi chốt. Cần quy trình escalation sớm (báo trưởng nhóm trước khi khách lung lay) và lịch kèm cặp 1-1.',
+    opener: 'Bàn cách kèm chốt cho người mới và tránh lặp lại vụ bể hồ sơ vì báo trễ.',
+    participants: ['khoa', 'luan', 'huong', 'tuan'],
+  },
+  {
+    id: 'listings',
+    title: 'Quản lý nguồn hàng',
+    focus:
+      'Phải báo nhà đều và ưu tiên nội bộ; không để nguồn công ty bị tuồn bán ra ngoài hay chia 50-50 với cò vườn. Cần cơ chế minh bạch nguồn nhà trên Landsoft.',
+    opener: 'Siết kỷ luật nguồn hàng: báo nhà nội bộ trước, minh bạch trên Landsoft, không tuồn ra ngoài.',
+    participants: ['mai', 'tuan', 'huy', 'huong'],
+  },
+  {
+    id: 'content',
+    title: 'Content & TikTok ra đơn',
+    focus:
+      'Clip Thanh Duy đạt 1 triệu view. Làm sao biến lượt xem thành khách xem nhà thật và giao dịch; Khoa làm content cùng; cả nhóm quay review nhà đều đặn.',
+    opener: 'Bàn cách biến view TikTok thành khách thật, và nhân rộng cách làm content cho cả nhóm.',
+    participants: ['thanhduy', 'khoa', 'tuan', 'huong'],
+  },
+  {
+    id: 'discipline',
+    title: 'Kỷ luật & tinh thần nhóm',
+    focus:
+      'Đi trễ, thái độ hợp tác, và xung đột nội bộ (vụ Zalo 18/6) đang ảnh hưởng nhóm. Cần kéo mọi người tập trung vào mục tiêu chung thay vì phe phái, xử lý bằng quy chế và bằng chứng.',
+    opener: 'Nói thẳng về giờ giấc và thái độ phối hợp; nhóm cần đoàn kết hướng tới chỉ tiêu.',
+    participants: ['tri', 'mai', 'huong', 'huy'],
+  },
+  {
+    id: 'target',
+    title: 'Chốt mục tiêu & cam kết quý',
+    focus:
+      'Chốt chỉ tiêu quý 1.5 tỷ, phân bổ cho từng người, và lấy cam kết con số cụ thể của mỗi người cho tháng này.',
+    opener: 'Chốt mục tiêu quý 1.5 tỷ và xin cam kết con số cụ thể của từng người tháng này.',
+    participants: ['huong', 'tuan', 'thanhduy', 'luan'],
+  },
+]
+
+// Thư ký cuộc họp — rút 1 việc cần làm cụ thể cho trưởng nhóm sau mỗi chủ đề.
+export const SECRETARY_PROMPT = `Bạn là thư ký cuộc họp nhóm môi giới BĐS Bom Tấn (Sài Gòn King Land). Dựa trên đoạn trao đổi vừa rồi về một chủ đề, hãy rút ra ĐÚNG MỘT việc cần làm cụ thể, khả thi cho trưởng nhóm Trần Đăng Duy để phát triển nhóm. Viết 1 câu ngắn (tối đa 22 từ) dạng hành động: làm gì, cho ai, khi nào nếu có. Bắt đầu bằng động từ. KHÔNG giải thích, KHÔNG xuống dòng, chỉ trả về đúng câu việc cần làm.`

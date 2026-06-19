@@ -9,7 +9,7 @@ import { PERSONAS } from '../data/simulation'
 
 export default function VirtualOffice() {
   const { state, setSpeed, reset } = useSimulation()
-  const { characters, problems, time, speed } = state
+  const { characters, problems, actionItems, currentTopic, time, speed } = state
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#0a0a14', position: 'relative' }}>
@@ -84,7 +84,7 @@ export default function VirtualOffice() {
           <div>
             <div style={{ fontWeight: 700, fontSize: 15 }}>Văn Phòng BĐS Ảo — Nhóm Bom Tấn (Sài Gòn King Land)</div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
-              Họp nhóm Bom Tấn: quy định, doanh số & trọng tâm tháng · Kéo chuột để xoay góc nhìn
+              Giả lập họp phát triển nhóm — AI bàn theo agenda & xuất việc cần làm · Kéo chuột để xoay
             </div>
           </div>
         </div>
@@ -120,6 +120,8 @@ export default function VirtualOffice() {
       {/* Problem log panel */}
       <ProblemLog
         problems={problems}
+        actionItems={actionItems}
+        currentTopic={currentTopic}
         time={time}
         speed={speed}
         onSpeedChange={setSpeed}
