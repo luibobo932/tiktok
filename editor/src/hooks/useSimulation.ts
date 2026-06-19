@@ -105,7 +105,13 @@ Trọng tâm: ${topic.focus}${scenarioLine}
 ${historyText}Cả phòng đang chờ ${persona.name} góp ý ĐÚNG vào chủ đề này (không lạc đề). ${persona.name} nói gì?`
 
   let text = await ollamaChat(system, user)
-  text = text.replace(new RegExp(`^${persona.name}\\s*[:：-]\\s*`, 'i'), '').trim()
+  // Strip a self-attribution prefix the model sometimes adds: "Tên nói:", "Khoa:", etc.
+  const lastWord = persona.name.split(' ').pop() ?? ''
+  const names = [persona.name, lastWord].filter(Boolean).map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  text = text
+    .replace(new RegExp(`^["'"']?\\s*(?:${names.join('|')})\\s*(?:nói[^:：]*)?[:：]\\s*["'"']?`, 'i'), '')
+    .replace(/^["'"']+|["'"']+$/g, '')
+    .trim()
   return text
 }
 

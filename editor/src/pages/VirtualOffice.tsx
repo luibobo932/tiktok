@@ -110,7 +110,7 @@ export default function VirtualOffice() {
       >
         <div style={{ fontSize: 9, color: '#777', marginBottom: 2, display: 'flex', gap: 8 }}>
           <span>Nhân sự</span>
-          <span style={{ marginLeft: 'auto', color: '#34D399' }}>Tinh thần</span>
+          <span style={{ marginLeft: 'auto', color: '#34D399' }}>Tự tin</span>
           <span style={{ color: '#FBBF24' }}>N.lượng</span>
           <span style={{ color: '#F87171' }}>Áp lực</span>
         </div>

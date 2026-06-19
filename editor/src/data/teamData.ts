@@ -23,21 +23,23 @@ export const PERSONA_FACTS: Record<string, string> = {
   thanhduy: 'Bạn vừa có clip TikTok 1 triệu view. Chưa chuyển hết view thành khách. Đang thuê nhà nên cần tiền.',
 }
 
-// Baseline mood (0-100): tinhThan = tinh thần, nangLuong = năng lượng, apLuc = áp lực.
+// Baseline mood (0-100) lấy thẳng từ "Dynamic state" trong hồ sơ (Energy/Confidence/
+// Stress thang 0-5, nhân 20). tinhThan = Tự tin (confidence), nangLuong = Năng lượng
+// (energy), apLuc = Áp lực (stress).
 export interface Mood {
-  tinhThan: number
-  nangLuong: number
-  apLuc: number
+  tinhThan: number // Tự tin
+  nangLuong: number // Năng lượng
+  apLuc: number // Áp lực
 }
 
 export const BASELINE_MOOD: Record<string, Mood> = {
-  duc: { tinhThan: 65, nangLuong: 70, apLuc: 80 },
-  huy: { tinhThan: 55, nangLuong: 45, apLuc: 30 },
-  tuan: { tinhThan: 75, nangLuong: 70, apLuc: 65 },
-  huong: { tinhThan: 80, nangLuong: 82, apLuc: 50 },
-  luan: { tinhThan: 60, nangLuong: 75, apLuc: 60 },
-  tri: { tinhThan: 45, nangLuong: 35, apLuc: 25 },
-  mai: { tinhThan: 40, nangLuong: 62, apLuc: 75 },
-  khoa: { tinhThan: 66, nangLuong: 80, apLuc: 55 },
-  thanhduy: { tinhThan: 80, nangLuong: 74, apLuc: 70 },
+  duc: { tinhThan: 60, nangLuong: 60, apLuc: 80 }, // E3 C3 S4
+  huy: { tinhThan: 80, nangLuong: 40, apLuc: 20 }, // E2 C4 S1
+  tuan: { tinhThan: 100, nangLuong: 80, apLuc: 60 }, // E4 C5 S3
+  huong: { tinhThan: 100, nangLuong: 80, apLuc: 60 }, // E4 C5 S3
+  luan: { tinhThan: 60, nangLuong: 100, apLuc: 60 }, // E5 C3 S3
+  tri: { tinhThan: 80, nangLuong: 20, apLuc: 20 }, // E1 C4 S1
+  mai: { tinhThan: 80, nangLuong: 60, apLuc: 60 }, // E3 C4 S3
+  khoa: { tinhThan: 40, nangLuong: 80, apLuc: 60 }, // E4 C2 S3
+  thanhduy: { tinhThan: 80, nangLuong: 100, apLuc: 60 }, // E5 C4 S3
 }
