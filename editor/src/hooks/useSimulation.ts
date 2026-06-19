@@ -81,6 +81,7 @@ async function speakOnTopic(
   isOpener: boolean,
   scenario: string | null,
   priorDecision?: string,
+  leaderMsg?: string,
 ): Promise<string> {
   const persona = PERSONAS.find((p) => p.id === personaId)!
   const system = buildSystemPrompt(personaId)
@@ -94,13 +95,17 @@ async function speakOnTopic(
     ? `\n[Lần trước chủ đề này nhóm đã chốt: "${priorDecision}". ĐỪNG mở lại từ đầu — hãy hỏi tiến độ việc đó hoặc đẩy sâu thêm một góc mới.]`
     : ''
 
-  const user = isOpener
-    ? `[Cuộc họp nhóm Bom Tấn. Trưởng nhóm Duy ${priorDecision ? 'quay lại' : 'mở'} một chủ đề để phát triển nhóm.]
+  const user = leaderMsg
+    ? `[Cuộc họp nhóm Bom Tấn. Trưởng nhóm Duy vừa nói TRỰC TIẾP với cả nhóm:]
+"${leaderMsg}"
+${scenarioLine}${historyText}Bạn (${persona.name}) đáp lại trưởng nhóm thế nào? Phản ứng thật đúng cá tính, năng lực và hoàn cảnh của bạn — có thể đồng tình, phản biện, xin làm rõ, hoặc cam kết. Đáp THẲNG vào điều Duy vừa nói, không lảng sang chuyện khác.`
+    : isOpener
+      ? `[Cuộc họp nhóm Bom Tấn. Trưởng nhóm Duy ${priorDecision ? 'quay lại' : 'mở'} một chủ đề để phát triển nhóm.]
 Chủ đề: "${topic.title}".
 Trọng tâm: ${topic.focus}
 Gợi ý: ${topic.opener}${followUp}${scenarioLine}
 ${historyText}Duy mở đầu chủ đề này thế nào? Nêu vấn đề bằng giọng trưởng nhóm và hỏi anh em một câu cụ thể, không lặp lại điều đã nói.`
-    : `[Cuộc họp nhóm Bom Tấn đang bàn chủ đề: "${topic.title}".]
+      : `[Cuộc họp nhóm Bom Tấn đang bàn chủ đề: "${topic.title}".]
 Trọng tâm: ${topic.focus}${scenarioLine}
 ${historyText}Cả phòng đang chờ ${persona.name} góp ý ĐÚNG vào chủ đề này (không lạc đề). ${persona.name} nói gì?`
 
@@ -282,6 +287,7 @@ export function useSimulation() {
   const lastTickRef = useRef<number>(performance.now())
   const convHistoryRef = useRef<ConvEntry[]>([])
   const scenarioRef = useRef<string | null>(null)
+  const pendingUserRef = useRef<string[]>([]) // leader (user) messages awaiting team reaction
   const runIdRef = useRef(0)
 
   const applyState = useCallback((mutator: (s: SimState) => void) => {
@@ -324,11 +330,40 @@ export function useSimulation() {
     const myRun = runIdRef.current
     const alive = () => runIdRef.current === myRun
 
+    // Sleep that returns early if the leader (user) sends a message, so the team reacts fast.
+    async function sleepOrUser(ms: number) {
+      let waited = 0
+      while (waited < ms && alive() && pendingUserRef.current.length === 0) {
+        const step = Math.min(250, ms - waited)
+        await sleep(step)
+        waited += step
+      }
+    }
+
+    // When the user (as Duy) speaks, have 1-2 members react directly to it.
+    async function drainUserMsgs(topic: AgendaTopic) {
+      while (alive() && pendingUserRef.current.length > 0) {
+        const msg = pendingUserRef.current.shift()!
+        const members = PERSONAS.filter((p) => p.id !== 'duc').map((p) => p.id)
+        // shuffle, take 1-2 responders
+        for (let i = members.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1))
+          ;[members[i], members[j]] = [members[j], members[i]]
+        }
+        const responders = members.slice(0, Math.random() < 0.5 ? 1 : 2)
+        for (const rid of responders) {
+          if (!alive()) return
+          await takeTurn(rid, topic, false, undefined, msg)
+        }
+      }
+    }
+
     async function takeTurn(
       speakerId: string,
       topic: AgendaTopic,
       isOpener: boolean,
       priorDecision?: string,
+      leaderMsg?: string,
     ): Promise<string> {
       const persona = PERSONAS.find((p) => p.id === speakerId)!
       applyState((s) => {
@@ -340,7 +375,7 @@ export function useSimulation() {
 
       let text = ''
       try {
-        text = await speakOnTopic(speakerId, topic, convHistoryRef.current, isOpener, scenarioRef.current, priorDecision)
+        text = await speakOnTopic(speakerId, topic, convHistoryRef.current, isOpener, scenarioRef.current, priorDecision, leaderMsg)
       } catch (err) {
         console.warn(`[${speakerId}] error:`, err)
         applyState((s) => {
@@ -391,7 +426,7 @@ export function useSimulation() {
         s.characters[speakerId].speech = null
         s.characters[speakerId].behavior = 'sitting'
       })
-      await sleep(randomBetween(PAUSE_BETWEEN.min, PAUSE_BETWEEN.max))
+      await sleepOrUser(randomBetween(PAUSE_BETWEEN.min, PAUSE_BETWEEN.max))
       return text
     }
 
@@ -416,11 +451,17 @@ export function useSimulation() {
         const prior = [...stateRef.current.actionItems]
           .reverse()
           .find((a) => a.kind !== 'insight' && a.topicTitle === topic.title)
+        await drainUserMsgs(topic) // react to any leader (user) message first
+        if (!alive()) break
+
         const opener = await takeTurn('duc', topic, true, prior?.text)
         if (!alive()) break
         if (opener) topicLines.push({ name: 'Trần Đăng Duy', text: opener })
+        await drainUserMsgs(topic)
 
         for (const pid of topic.participants) {
+          if (!alive()) break
+          await drainUserMsgs(topic)
           if (!alive()) break
           const persona = PERSONAS.find((p) => p.id === pid)
           const line = await takeTurn(pid, topic, false)
@@ -486,7 +527,8 @@ export function useSimulation() {
           }
         }
 
-        await sleep(randomBetween(2500, 4500))
+        await drainUserMsgs(topic)
+        await sleepOrUser(randomBetween(2500, 4500))
       }
     }
 
@@ -536,6 +578,7 @@ export function useSimulation() {
   const reset = useCallback(() => {
     convHistoryRef.current = []
     scenarioRef.current = null
+    pendingUserRef.current = []
     if (typeof window !== 'undefined') localStorage.removeItem(STORE_KEY)
     const characters: Record<string, CharacterState> = {}
     for (const p of PERSONAS) {
@@ -562,6 +605,7 @@ export function useSimulation() {
       ...convHistoryRef.current.slice(-(CONVERSATION_HISTORY_LIMIT - 1)),
       { name: 'Trưởng nhóm Duy (bạn)', text },
     ]
+    pendingUserRef.current.push(text) // queue for the team to react to
     applyState((s) => {
       s.problems = [
         ...s.problems.slice(-49),
