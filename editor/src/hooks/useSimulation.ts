@@ -74,6 +74,24 @@ async function ollamaChat(system: string, user: string, opts: Record<string, unk
   return text
 }
 
+// Turn live mood into a tone instruction so the same person sounds different as
+// the meeting heats up (energy/confidence/stress drive delivery, not just bars).
+// Live mood → a trait sentence appended to the SYSTEM prompt (putting it in the
+// user message made the small model echo the directive; in system it's embodied).
+function moodHint(m?: Mood): string {
+  if (!m) return ''
+  const parts: string[] = []
+  if (m.nangLuong < 35) parts.push('cộc, ngắn, thiếu sức sống')
+  else if (m.nangLuong > 82) parts.push('dồn dập, sôi nổi')
+  if (m.apLuc > 72) parts.push('gắt, dễ thủ thế')
+  else if (m.apLuc < 28) parts.push('thong thả, nhẹ nhõm')
+  if (m.tinhThan > 82) parts.push('chắc nịch, dứt khoát')
+  else if (m.tinhThan < 40) parts.push('dè dặt, ngập ngừng')
+  return parts.length
+    ? `\nTâm trạng hiện tại của bạn khiến cách nói: ${parts.join(', ')} — điều này ngấm tự nhiên vào lời bạn, không mô tả nó thành lời.`
+    : ''
+}
+
 async function speakOnTopic(
   personaId: string,
   topic: AgendaTopic,
@@ -82,9 +100,10 @@ async function speakOnTopic(
   scenario: string | null,
   priorDecision?: string,
   leaderMsg?: string,
+  mood?: Mood,
 ): Promise<string> {
   const persona = PERSONAS.find((p) => p.id === personaId)!
-  const system = buildSystemPrompt(personaId)
+  const system = buildSystemPrompt(personaId) + moodHint(mood)
   const scenarioLine = scenario ? `\n[TÌNH HUỐNG ĐANG XẢY RA, hãy phản ứng với nó: ${scenario}]\n` : ''
   const historyText =
     history.length > 0
@@ -110,8 +129,12 @@ Trọng tâm: ${topic.focus}${scenarioLine}
 ${historyText}Cả phòng đang chờ ${persona.name} góp ý ĐÚNG vào chủ đề này (không lạc đề). ${persona.name} nói gì?`
 
   let text = await ollamaChat(system, user)
-  // Strip a self-attribution prefix the model sometimes adds: "Tên nói:", "Khoa:", etc.
   const lastWord = persona.name.split(' ').pop() ?? ''
+  // Salvage: if the model narrated tone then quoted the real line ("Thắng gắt giọng... nói: \"...\""),
+  // keep only the quoted speech.
+  const narrated = text.match(new RegExp(`${lastWord}[^"'"']*?(?:nói|đáp)[^:：]*[:：]\\s*["'"']([^"'"']+)["'"']`, 'i'))
+  if (narrated) text = narrated[1]
+  // Strip a self-attribution prefix the model sometimes adds: "Tên nói:", "Khoa:", etc.
   const names = [persona.name, lastWord].filter(Boolean).map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   text = text
     .replace(new RegExp(`^["'"']?\\s*(?:${names.join('|')})\\s*(?:nói[^:：]*)?[:：]\\s*["'"']?`, 'i'), '')
@@ -375,7 +398,8 @@ export function useSimulation() {
 
       let text = ''
       try {
-        text = await speakOnTopic(speakerId, topic, convHistoryRef.current, isOpener, scenarioRef.current, priorDecision, leaderMsg)
+        const mood = stateRef.current.mood[speakerId]
+        text = await speakOnTopic(speakerId, topic, convHistoryRef.current, isOpener, scenarioRef.current, priorDecision, leaderMsg, mood)
       } catch (err) {
         console.warn(`[${speakerId}] error:`, err)
         applyState((s) => {
