@@ -152,37 +152,58 @@ export default function Character3D({ charState }: Props) {
 
       {/* ── Speech bubble ── */}
       {speech && (
-        <Html position={[0, 2.2, 0]} center distanceFactor={6} zIndexRange={[100, 0]}>
+        <Html position={[0, 2.45, 0]} center distanceFactor={10} zIndexRange={[100, 0]} pointerEvents="none">
           <div
             style={{
-              background: 'white',
-              border: `2px solid ${color}`,
-              borderRadius: 12,
-              padding: '8px 12px',
-              maxWidth: 220,
-              fontSize: 12,
-              lineHeight: 1.4,
-              color: '#111',
-              fontFamily: 'system-ui, sans-serif',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+              width: 260,
+              borderRadius: 16,
+              background: '#ffffff',
+              border: `3px solid ${color}`,
+              boxShadow: '0 8px 28px rgba(0,0,0,0.35)',
               position: 'relative',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
+              overflow: 'hidden',
+              fontFamily: 'system-ui, sans-serif',
             }}
           >
-            {speech}
+            {/* Name header */}
+            <div
+              style={{
+                background: color,
+                color: 'white',
+                fontSize: 14,
+                fontWeight: 800,
+                padding: '5px 12px',
+                letterSpacing: 0.2,
+              }}
+            >
+              {persona.name}
+            </div>
+            {/* Message body */}
+            <div
+              style={{
+                padding: '10px 13px',
+                fontSize: 16,
+                fontWeight: 600,
+                lineHeight: 1.45,
+                color: '#0f0f1a',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}
+            >
+              {speech}
+            </div>
             {/* Bubble tail */}
             <div
               style={{
                 position: 'absolute',
-                bottom: -10,
+                bottom: -13,
                 left: '50%',
                 transform: 'translateX(-50%)',
                 width: 0,
                 height: 0,
-                borderLeft: '8px solid transparent',
-                borderRight: '8px solid transparent',
-                borderTop: `10px solid ${color}`,
+                borderLeft: '11px solid transparent',
+                borderRight: '11px solid transparent',
+                borderTop: `14px solid ${color}`,
               }}
             />
           </div>

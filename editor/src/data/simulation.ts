@@ -45,13 +45,13 @@ export const WAYPOINTS = {
   mai_desk: new THREE.Vector3(0, 0, 0.5),
 }
 
-// ── Personas ────────────────────────────────────────────────────────────────
+// ── Personas (App SKL — nền tảng video BĐS nhà phố NhàPhốSG) ──────────────────
 
 export const PERSONAS: PersonaData[] = [
   {
     id: 'tuan',
     name: 'Anh Tuấn',
-    role: 'Căn hộ cao cấp',
+    role: 'Môi giới nhà phố Q3',
     color: '#3B82F6',
     deskPosition: [-6.5, 0.8, 3],
     seatPosition: [-6.5, 0, 3.5],
@@ -59,7 +59,7 @@ export const PERSONAS: PersonaData[] = [
   {
     id: 'huong',
     name: 'Chị Hương',
-    role: 'Đất nền tỉnh',
+    role: 'Môi giới nhà hẻm Q5',
     color: '#10B981',
     deskPosition: [-2.5, 0.8, 3],
     seatPosition: [-2.5, 0, 3.5],
@@ -67,7 +67,7 @@ export const PERSONAS: PersonaData[] = [
   {
     id: 'linh',
     name: 'Em Linh',
-    role: 'Cho thuê / Gen Z',
+    role: 'CTV quay video (Gen Z)',
     color: '#F59E0B',
     deskPosition: [1.5, 0.8, 3],
     seatPosition: [1.5, 0, 3.5],
@@ -75,7 +75,7 @@ export const PERSONAS: PersonaData[] = [
   {
     id: 'duc',
     name: 'Anh Đức',
-    role: 'Trưởng nhóm sàn',
+    role: 'Trưởng nhóm / Admin',
     color: '#6366F1',
     deskPosition: [-4.5, 0.8, 0],
     seatPosition: [-4.5, 0, 0.5],
@@ -83,7 +83,7 @@ export const PERSONAS: PersonaData[] = [
   {
     id: 'mai',
     name: 'Chị Mai',
-    role: 'Biệt thự nghỉ dưỡng',
+    role: 'Content & Kiến thức',
     color: '#EC4899',
     deskPosition: [0, 0.8, 0],
     seatPosition: [0, 0, 0.5],
@@ -91,18 +91,20 @@ export const PERSONAS: PersonaData[] = [
 ]
 
 // ── Simulation script (time in seconds) ─────────────────────────────────────
+// Bối cảnh: cả nhóm đang dùng thử App SKL (NhàPhốSG) — đăng video, tạo listing,
+// nhận lead, duyệt nội dung — và phát sinh vấn đề thực tế của nền tảng.
 
 export const SIMULATION_SCRIPT: ScriptEvent[] = [
-  // === Hồi 1: Khám phá ban đầu ===
+  // === Hồi 1: Mỗi người tự dùng app, vấn đề lộ ra ===
   {
     time: 4,
     who: 'tuan',
     action: {
       type: 'speech',
-      msg: 'Logo công ty đâu? Khách không biết video của ai hết!',
-      feature: 'Logo watermark & thông tin môi giới',
+      msg: 'Đăng 1 video mà bắt điền 12 ô: quận, đường, giá, diện tích, khách phù hợp... nản quá!',
+      feature: 'Rút gọn form đăng video — tự điền từ hồ sơ listing',
       severity: 'high',
-      emoji: '🤨',
+      emoji: '😮‍💨',
     },
   },
   {
@@ -110,10 +112,10 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'huong',
     action: {
       type: 'speech',
-      msg: 'Trời ơi! Quay ngang mà viền đen hai bên bự quá, xấu lắm!',
-      feature: 'Blur background thay viền đen (video ngang)',
-      severity: 'high',
-      emoji: '😰',
+      msg: 'Cô đâu biết "hẻm xe hơi" với "hẻm ba gác" khác gì mà chọn loại nhà!',
+      feature: 'Chú thích + chọn loại nhà bằng hình minh hoạ',
+      severity: 'medium',
+      emoji: '🤷‍♀️',
     },
   },
   {
@@ -121,10 +123,10 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'linh',
     action: {
       type: 'speech',
-      msg: 'RELOAD TRANG LÀ MẤT HẾT DỰ ÁN RỒI!! Không có autosave à??',
-      feature: 'Tự động lưu & khôi phục dự án',
+      msg: 'Dán link video TikTok vô mà web không hiện gì, chỉ ra cái link trơ trọi à??',
+      feature: 'Nhúng video TikTok chuẩn (oEmbed) thay vì link suông',
       severity: 'high',
-      emoji: '😱',
+      emoji: '😵',
     },
   },
   {
@@ -142,8 +144,8 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'duc',
     action: {
       type: 'speech',
-      msg: 'Tuấn ơi logo sàn mình đâu? Mỗi bạn làm một kiểu khác nhau hết!',
-      feature: 'Brand kit chung cho cả team',
+      msg: 'Căn Lê Văn Sỹ này sao có 2 người nhận phụ trách? Trùng mã căn rồi Tuấn ơi!',
+      feature: 'Chống trùng listing + khoá 1 người phụ trách / căn',
       severity: 'high',
       emoji: '🧐',
     },
@@ -153,91 +155,47 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'mai',
     action: {
       type: 'speech',
-      msg: 'Clip dài 8 phút, kéo từng đoạn một bằng slider nhỏ xíu mệt xỉu...',
-      feature: 'Timeline tổng multi-clip',
+      msg: 'Em viết bài kiến thức mà không có chỗ chèn ảnh, chỉ có mỗi ô text trơn.',
+      feature: 'Trình soạn thảo bài viết (rich text + chèn ảnh)',
       severity: 'medium',
-      emoji: '😤',
+      emoji: '✍️',
     },
   },
 
-  // === Hồi 2: Họp khẩn ===
-  {
-    time: 23,
-    who: 'duc',
-    action: { type: 'callMeeting' },
-  },
-  {
-    time: 24,
-    who: 'tuan',
-    action: { type: 'walk', target: 'meeting' },
-  },
-  {
-    time: 24,
-    who: 'huong',
-    action: { type: 'walk', target: 'meeting' },
-  },
-  {
-    time: 24,
-    who: 'linh',
-    action: { type: 'walk', target: 'meeting' },
-  },
-  {
-    time: 24,
-    who: 'mai',
-    action: { type: 'walk', target: 'meeting' },
-  },
-  {
-    time: 24,
-    who: 'duc',
-    action: { type: 'walk', target: 'meeting' },
-  },
+  // === Hồi 2: Đức triệu tập họp khẩn ===
+  { time: 23, who: 'duc', action: { type: 'callMeeting' } },
+  { time: 24, who: 'tuan', action: { type: 'walk', target: 'meeting' } },
+  { time: 24, who: 'huong', action: { type: 'walk', target: 'meeting' } },
+  { time: 24, who: 'linh', action: { type: 'walk', target: 'meeting' } },
+  { time: 24, who: 'mai', action: { type: 'walk', target: 'meeting' } },
+  { time: 24, who: 'duc', action: { type: 'walk', target: 'meeting' } },
   {
     time: 29,
     who: 'duc',
     action: {
       type: 'speech',
-      msg: 'Team ơi cần gấp 3 thứ: LOGO • NHẠC NỀN • LƯU TỰ ĐỘNG! Không có 3 cái này khó dùng lắm!',
-      feature: 'P0: Logo + Nhạc nền + Auto-save',
+      msg: '3 việc gấp: NHÚNG VIDEO chuẩn • PHÂN LEAD tự động • CHỐNG TRÙNG listing. Không là loạn!',
+      feature: 'P0: Nhúng video + Phân lead tự động + Chống trùng listing',
       severity: 'high',
       emoji: '📋',
     },
   },
 
-  // === Hồi 3: Vấn đề sâu hơn ===
-  {
-    time: 34,
-    who: 'tuan',
-    action: { type: 'walk', target: 'desk' },
-  },
-  {
-    time: 34,
-    who: 'huong',
-    action: { type: 'walk', target: 'desk' },
-  },
-  {
-    time: 34,
-    who: 'linh',
-    action: { type: 'walk', target: 'desk' },
-  },
-  {
-    time: 34,
-    who: 'mai',
-    action: { type: 'walk', target: 'desk' },
-  },
-  {
-    time: 34,
-    who: 'duc',
-    action: { type: 'walk', target: 'desk' },
-  },
+  // === Hồi 3: Về bàn, vấn đề sâu hơn ===
+  { time: 34, who: 'tuan', action: { type: 'walk', target: 'desk' } },
+  { time: 34, who: 'huong', action: { type: 'walk', target: 'desk' } },
+  { time: 34, who: 'linh', action: { type: 'walk', target: 'desk' } },
+  { time: 34, who: 'mai', action: { type: 'walk', target: 'desk' } },
+  { time: 34, who: 'duc', action: { type: 'walk', target: 'desk' } },
   {
     time: 39,
-    who: 'tuan',
+    who: 'duc',
     action: {
       type: 'speech',
-      msg: 'Xuất video ra 480MB! TikTok báo lỗi file quá lớn không upload được!',
-      feature: 'Tối ưu dung lượng file khi export',
+      msg: 'Lead khách mua về 2 tiếng không ai gọi là bị thu hồi — mà app chẳng báo cho ai hết!',
+      feature: 'Thông báo lead realtime (Zalo/app) + đếm ngược SLA 2 giờ',
       severity: 'high',
-      emoji: '😒',
+      emoji: '⏰',
     },
   },
   {
@@ -245,31 +203,23 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'huong',
     action: {
       type: 'speech',
-      msg: 'Tôi ngại nói, muốn gõ chữ rồi máy đọc giùm được không?',
-      feature: 'Text-to-speech giọng Việt',
-      severity: 'medium',
-      emoji: '🙁',
+      msg: 'Khách gọi hỏi căn còn không, mà web vẫn ghi "còn bán" dù bán cả tuần rồi!',
+      feature: 'Đồng bộ trạng thái listing realtime',
+      severity: 'high',
+      emoji: '😬',
     },
   },
-  {
-    time: 44,
-    who: 'mai',
-    action: { type: 'walk', target: 'coffee' },
-  },
-  {
-    time: 46,
-    who: 'linh',
-    action: { type: 'walk', target: 'coffee' },
-  },
+  { time: 44, who: 'mai', action: { type: 'walk', target: 'coffee' } },
+  { time: 46, who: 'linh', action: { type: 'walk', target: 'coffee' } },
   {
     time: 47,
     who: 'mai',
     action: {
       type: 'speech',
-      msg: 'Ước gì có nhạc biển... nhạc sang trọng cho biệt thự nghỉ dưỡng á!',
-      feature: 'Thư viện nhạc theo mood (sang, tươi vui, bình yên...)',
+      msg: 'Bài kiến thức nhà phố của em không lên Google, thiếu SEO hết trơn.',
+      feature: 'SEO meta + sitemap cho listing & bài viết',
       severity: 'medium',
-      emoji: '☕',
+      emoji: '🔍',
     },
   },
   {
@@ -277,29 +227,21 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'linh',
     action: {
       type: 'speech',
-      msg: 'Chị ơi trên điện thoại lag lắm, thanh kéo nhỏ xíu không kéo được!',
-      feature: 'Tối ưu giao diện & hiệu năng mobile',
+      msg: 'Trang admin mở trên điện thoại bị tràn ngang, bấm không trúng nút luôn!',
+      feature: 'Admin responsive cho mobile',
       severity: 'high',
       emoji: '📱',
     },
   },
-  {
-    time: 54,
-    who: 'linh',
-    action: { type: 'walk', target: 'desk' },
-  },
-  {
-    time: 54,
-    who: 'mai',
-    action: { type: 'walk', target: 'desk' },
-  },
+  { time: 54, who: 'linh', action: { type: 'walk', target: 'desk' } },
+  { time: 54, who: 'mai', action: { type: 'walk', target: 'desk' } },
   {
     time: 57,
     who: 'linh',
     action: {
       type: 'speech',
-      msg: 'Mỗi căn phải làm lại từ đầu, chị ơi! Cần lưu template dùng lại!',
-      feature: 'Template tái sử dụng & nhân bản dự án',
+      msg: 'Video em đăng 3 ngày chưa được duyệt, hết trend mất rồi anh ơi!',
+      feature: 'Hàng đợi duyệt nhanh + duyệt được trên mobile',
       severity: 'high',
       emoji: '🔥',
     },
@@ -309,23 +251,23 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'duc',
     action: {
       type: 'speech',
-      msg: 'Xuất xong cần upload thẳng lên TikTok luôn, không phải tải về rồi đăng lại!',
-      feature: 'Chia sẻ trực tiếp lên TikTok / Zalo',
-      severity: 'medium',
-      emoji: '🎯',
+      msg: 'CTV mà xuất được nguyên danh sách khách hàng thì chết. Phải chặn + ghi log ngay!',
+      feature: 'Phân quyền chặt + log thao tác (chống lộ data khách)',
+      severity: 'high',
+      emoji: '🔒',
     },
   },
   {
     time: 64,
-    who: 'huong',
+    who: 'tuan',
     action: {
       type: 'speech',
-      msg: 'Muốn ghim bản đồ vào clip luôn, khách biết vị trí ngay!',
-      feature: 'Overlay bản đồ / địa chỉ',
-      severity: 'low',
-      emoji: '🗺️',
+      msg: 'Khách lọc "Q5 dưới 15 tỷ, hẻm xe hơi" mà ra toàn mặt tiền 30 tỷ!',
+      feature: 'Sửa bộ lọc giá + loại nhà cho đúng',
+      severity: 'medium',
+      emoji: '🧮',
     },
   },
 ]
 
-export const SCRIPT_DURATION = 68 // seconds before loop
+export const SCRIPT_DURATION = 70 // seconds before loop

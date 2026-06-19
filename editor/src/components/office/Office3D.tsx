@@ -70,12 +70,14 @@ function MeetingTable() {
       <Text
         position={[2.75, 1.55, 0.5]}
         rotation={[0, -Math.PI / 2, 0]}
-        fontSize={0.14}
-        color="#333"
+        fontSize={0.15}
+        color="#222"
         anchorX="center"
-        maxWidth={2}
+        textAlign="center"
+        maxWidth={2.2}
+        lineHeight={1.4}
       >
-        {'Vấn đề cần giải quyết:\n• Logo watermark\n• Nhạc nền\n• Auto-save'}
+        {'VIEC GAP - App SKL:\n1. Nhung video chuan\n2. Phan lead tu dong\n3. Chong trung listing'}
       </Text>
       {/* Meeting chairs */}
       {[0, 1, 2, 3, 4, 5].map((i) => {
@@ -200,8 +202,8 @@ export default function Office3D({ problems }: { problems: { id: string; emoji: 
       ))}
 
       {/* ── Company logo wall ── */}
-      <Text position={[0, 4.5, -8.85]} fontSize={0.35} color="#FE2C55" anchorX="center" fontWeight="bold">
-        🏠 House Review Editor — BĐS Việt
+      <Text position={[0, 4.5, -8.85]} fontSize={0.4} color="#D84E1E" anchorX="center" fontWeight="bold">
+        NhaPhoSG — App SKL · Nen tang video BDS nha pho
       </Text>
 
       {/* ── Furniture ── */}
