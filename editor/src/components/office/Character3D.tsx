@@ -27,7 +27,7 @@ export default function Character3D({ charState }: Props) {
   const walkPhaseRef = useRef(0)
   const shakeRef = useRef(0)
 
-  const { persona, position, behavior, speech, facingAngle } = charState
+  const { persona, position, behavior, speech, speechExpiry: _se, facingAngle, isThinking } = charState
   const color = persona.color
   const darkColor = hexToRgb(color)
 
@@ -153,6 +153,29 @@ export default function Character3D({ charState }: Props) {
       >
         {persona.role}
       </Text>
+
+      {/* ── Thinking indicator ── */}
+      {isThinking && !speech && (
+        <Html position={[0, 2.45, 0]} center distanceFactor={10} zIndexRange={[100, 0]} pointerEvents="none">
+          <div
+            style={{
+              borderRadius: 12,
+              background: 'rgba(255,255,255,0.92)',
+              border: `2px solid ${color}`,
+              padding: '6px 14px',
+              fontSize: 22,
+              letterSpacing: 4,
+              color: color,
+              fontWeight: 700,
+              boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+              animation: 'pulse 1.2s ease-in-out infinite',
+            }}
+          >
+            •••
+          </div>
+          <style>{`@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}`}</style>
+        </Html>
+      )}
 
       {/* ── Speech bubble ── */}
       {speech && (
