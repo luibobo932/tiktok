@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useFFmpeg } from './hooks/useFFmpeg'
 import { useEditorStore } from './store/editorStore'
 import UploadZone from './components/UploadZone'
@@ -5,6 +6,7 @@ import ClipList from './components/ClipList'
 import TrimEditor from './components/TrimEditor'
 import CaptionEditor from './components/CaptionEditor'
 import ExportPanel from './components/ExportPanel'
+import VirtualOffice from './pages/VirtualOffice'
 import { Step } from './types'
 
 const STEPS: { id: Step; label: string }[] = [
@@ -18,14 +20,40 @@ const STEPS: { id: Step; label: string }[] = [
 const STEP_ORDER: Step[] = ['upload', 'arrange', 'trim', 'captions', 'export']
 
 export default function App() {
-  // Initialize FFmpeg on mount
   useFFmpeg()
-
+  const [mode, setMode] = useState<'editor' | 'office'>('editor')
   const currentStep = useEditorStore((s) => s.currentStep)
   const setCurrentStep = useEditorStore((s) => s.setCurrentStep)
   const clips = useEditorStore((s) => s.clips)
-
   const currentIndex = STEP_ORDER.indexOf(currentStep)
+
+  if (mode === 'office') {
+    return (
+      <div style={{ position: 'relative' }}>
+        <VirtualOffice />
+        {/* Back button */}
+        <button
+          onClick={() => setMode('editor')}
+          style={{
+            position: 'absolute',
+            top: 16,
+            left: 16,
+            background: 'rgba(0,0,0,0.7)',
+            color: 'white',
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: 8,
+            padding: '6px 14px',
+            fontSize: 12,
+            cursor: 'pointer',
+            backdropFilter: 'blur(6px)',
+            zIndex: 50,
+          }}
+        >
+          ← Editor
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -35,7 +63,14 @@ export default function App() {
           HR
         </div>
         <h1 className="font-bold text-base">House Review Editor</h1>
-        <span className="ml-auto text-xs text-gray-400">{clips.length} clip</span>
+        <span className="ml-2 text-xs text-gray-400">{clips.length} clip</span>
+        {/* Office sim button */}
+        <button
+          onClick={() => setMode('office')}
+          className="ml-auto flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors"
+        >
+          🏢 Văn phòng ảo
+        </button>
       </header>
 
       {/* Step indicator */}
@@ -47,7 +82,7 @@ export default function App() {
                 onClick={() => {
                   if (i <= currentIndex || clips.length > 0) setCurrentStep(step.id)
                 }}
-                className={`flex flex-col items-center gap-0.5 group transition-all`}
+                className="flex flex-col items-center gap-0.5 group transition-all"
               >
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
