@@ -84,7 +84,7 @@ export default function VirtualOffice() {
           <div>
             <div style={{ fontWeight: 700, fontSize: 15 }}>Văn Phòng BĐS Ảo — App SKL (NhàPhốSG)</div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
-              5 nhân viên đang dùng thử nền tảng · Kéo chuột để xoay góc nhìn
+              Phổ biến quy định nhóm khi vận hành App SKL · Kéo chuột để xoay góc nhìn
             </div>
           </div>
         </div>

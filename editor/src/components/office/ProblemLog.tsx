@@ -52,14 +52,14 @@ export default function ProblemLog({ problems, time, speed, onSpeedChange, onRes
       {/* Header */}
       <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#FE2C55', marginBottom: 4 }}>
-          📊 Feedback thực tế
+          📋 Quy định nhóm — App SKL
         </div>
         <div style={{ display: 'flex', gap: 10, fontSize: 11 }}>
           <span style={{ background: '#EF444430', color: '#EF4444', borderRadius: 4, padding: '2px 7px' }}>
-            🔴 {highCount} vấn đề gấp
+            🔴 {highCount} quy định bắt buộc
           </span>
           <span style={{ background: '#3B82F630', color: '#93C5FD', borderRadius: 4, padding: '2px 7px' }}>
-            💡 {uniqueFeatures} tính năng
+            📑 {uniqueFeatures} điều khoản
           </span>
         </div>
 
@@ -119,7 +119,7 @@ export default function ProblemLog({ problems, time, speed, onSpeedChange, onRes
       <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {problems.length === 0 && (
           <div style={{ color: '#555', fontSize: 12, textAlign: 'center', marginTop: 40 }}>
-            Đang khởi động mô phỏng...
+            Đang bắt đầu phổ biến quy định...
           </div>
         )}
         {problems.map((p) => (
@@ -191,7 +191,7 @@ export default function ProblemLog({ problems, time, speed, onSpeedChange, onRes
       {/* Summary footer */}
       {problems.length > 0 && (
         <div style={{ padding: '10px 14px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: 11, color: '#888' }}>
-          Top cần làm ngay:
+          Quy định bắt buộc:
           {[...new Set(
             problems
               .filter((p) => p.severity === 'high')

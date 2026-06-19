@@ -77,7 +77,7 @@ function MeetingTable() {
         maxWidth={2.2}
         lineHeight={1.4}
       >
-        {'P0 SOFT-LAUNCH - App SKL:\n1. Nhung video chuan\n2. Chong trung listing\n3. Phan lead tu dong'}
+        {'QUY DINH NHOM - App SKL:\n1. Du lieu thuoc nen tang\n2. Duyet truoc khi cong khai\n3. Lead 2h phai goi\n4. Hoa hong theo giao dich'}
       </Text>
       {/* Meeting chairs */}
       {[0, 1, 2, 3, 4, 5].map((i) => {
