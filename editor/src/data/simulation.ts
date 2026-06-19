@@ -148,14 +148,14 @@ export const PERSONAS: PersonaData[] = [
 // quay clip, pipeline tuần, đào tạo HĐ đặt cọc, trọng tâm tháng 6.
 
 export const SIMULATION_SCRIPT: ScriptEvent[] = [
-  // ═══ Hồi 1 (0–22s): Ở bàn — báo cáo & hỏi quy chế ═══
+  // ═══ Hồi 1 (0–22s): Ở bàn — mỗi người nói từ trải nghiệm của mình ═══
   {
     time: 4,
     who: 'duc',
     action: {
       type: 'speech',
-      msg: 'Vào họp nhóm Bom Tấn. Mỗi người báo nhanh: tuần rồi dẫn mấy khách, gọi mấy chủ nhà, và 3 căn ngon nhất sẽ bán trong tháng 6.',
-      feature: 'Báo cáo đầu họp: khách dẫn, chủ đã gọi, 3 căn tốt nhất',
+      msg: 'Họp nhanh, thực chất. Tôi cần số thật: tuần rồi ai dẫn bao nhiêu khách, gọi bao nhiêu chủ. Mỗi người cho tôi 3 căn có khả năng chốt thật sự tháng 6 — không phải căn đang rao mà chủ không muốn bán.',
+      feature: 'Trưởng nhóm: yêu cầu số thật, không hứa suông',
       severity: 'high',
       emoji: '📊',
     },
@@ -165,8 +165,8 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'tuan',
     action: {
       type: 'speech',
-      msg: 'Tuần rồi anh dẫn 4 khách xem nhà, gọi 8 chủ. Căn anh thấy ngon nhất tháng này là hẻm Lê Văn Sỹ — giá đang mềm, dễ chốt.',
-      feature: 'Báo cáo top DS: khách + chủ + căn trọng điểm',
+      msg: 'Anh gọi 12 chủ cũ tuần rồi, có 3 căn vừa mềm giá. Căn ngon nhất là hẻm Lê Văn Sỹ — từ 4,8 tỷ còn 4,2 tỷ, chủ đang cần tiền. Anh báo nhóm Bom Tấn trước sáng nay rồi, đang để 3 tiếng nội bộ khai thác.',
+      feature: 'Tam Công: báo căn cụ thể, số thật, áp dụng đúng quy trình',
       severity: 'low',
       emoji: '🏆',
     },
@@ -176,10 +176,10 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'huy',
     action: {
       type: 'speech',
-      msg: 'Tháng rồi em đi trễ nhiều quá, em biết vượt 4 lần là phạt 50k mỗi lần. Tháng này em cam kết đúng giờ anh.',
-      feature: 'Kỷ luật chấm công: trễ ≤4 lần, nghỉ ≤3 ngày/tháng',
+      msg: 'Tháng 5 em trễ 9 lần, bị phạt 300k — em xin lỗi nhóm. Nguyên nhân là em đi thị trường từ 6h sáng, traffic kẹt về không kịp. Tháng này em đổi: sáng vào văn phòng đúng giờ trước, chiều mới ra thị trường.',
+      feature: 'Huy nhận lỗi 9 lần trễ T5, đề xuất thay đổi lịch trình cụ thể',
       severity: 'medium',
-      emoji: '⏰',
+      emoji: '🔧',
     },
   },
   {
@@ -187,10 +187,10 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'huong',
     action: {
       type: 'speech',
-      msg: 'Căn báo lên nhóm phải đủ địa chỉ, diện tích, kết cấu, giá, phí, tình trạng còn bán mới hợp lệ tính 1% phải không anh?',
-      feature: 'Báo hàng hợp lệ: đủ thông tin → người báo hưởng 1% (QĐ04)',
+      msg: 'Tháng 4 anh chốt 170 triệu nhờ cái bảng pipeline anh tự làm. Mỗi thứ Hai update: khách nào đang nóng, căn nào đang mềm giá, ai đang đàm phán. Nhìn vào là biết ngay tuần này tập trung đâu — không đợi cuối tháng mới thấy hụt chỉ tiêu.',
+      feature: 'Tuấn Dũng: pipeline tuần giúp chốt 170 triệu T4',
       severity: 'medium',
-      emoji: '📋',
+      emoji: '📈',
     },
   },
   {
@@ -198,10 +198,10 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'linh',
     action: {
       type: 'speech',
-      msg: 'Em mới vào, doanh số tính trên phí môi giới thực thu chứ không tính giá trị căn nhà đúng không anh?',
-      feature: 'Cách tính doanh số: trên phí môi giới thực thu',
+      msg: 'Em vào ngày 13/4. Tuần đầu em báo nhà kiểu "căn Lê Văn Sỹ 4 tỷ" — anh Duy bảo không hợp lệ. Hóa ra phải đủ địa chỉ, diện tích, kết cấu, giá, phí, tình trạng còn bán thì mới được tính 1%. Em rút kinh nghiệm từ cái đó.',
+      feature: 'Thường: học báo hàng đúng chuẩn từ lỗi tuần đầu',
       severity: 'medium',
-      emoji: '🧮',
+      emoji: '💡',
     },
   },
   { time: 13, who: 'linh', action: { type: 'walk', target: 'colleague', colleagueId: 'huong' } },
@@ -211,8 +211,8 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'tuan',
     action: {
       type: 'speech',
-      msg: 'Căn giá tốt này anh báo lên nhóm Bom Tấn trước, ưu tiên mình khai thác 3 tiếng rồi mới đưa ra nhóm chung Trụ sở.',
-      feature: 'Ưu tiên nội bộ Bom Tấn 3 tiếng trước nhóm chung',
+      msg: 'Tuần trước anh làm giá căn này rồi báo nhóm Bom Tấn trước — 3 tiếng sau đã có khách nội bộ quan tâm, không cần đẩy ra nhóm chung. Cái ưu tiên 3 tiếng này anh thấy hiệu quả thật sự.',
+      feature: 'Tam Công: ưu tiên 3 tiếng nội bộ đã chứng minh hiệu quả thực tế',
       severity: 'high',
       emoji: '⏱️',
     },
@@ -222,10 +222,10 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'luan',
     action: {
       type: 'speech',
-      msg: 'Mình cùng báo một căn thì trong 30 ngày người báo đầu hưởng hết, sau 30 ngày mới chia 30-70 đúng không anh?',
-      feature: 'Chia quyền lợi: <30 ngày người báo đầu 100%; sau 30 ngày 30/70',
+      msg: 'Lần trước em và anh Công cùng báo một căn — anh Công báo trước em đúng 3 tuần nên anh Công hưởng toàn bộ phần báo hàng. Cay lắm mà đúng. Từ đó em nhớ: timestamp Zalo quan trọng, 30 ngày trôi qua nhanh hơn mình nghĩ.',
+      feature: 'Luân: bài học đắt từ case mất phần báo hàng vì chậm 3 tuần',
       severity: 'medium',
-      emoji: '🤝',
+      emoji: '⚠️',
     },
   },
   {
@@ -233,10 +233,10 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'tri',
     action: {
       type: 'speech',
-      msg: 'Nhà giảm trên 10% so với giá báo trước thì người báo giá mới được tính công làm giá, đúng không anh Duy?',
-      feature: 'Điều kiện công làm giá: giảm >10% (≤20 tỷ) hoặc >7% (>20 tỷ)',
+      msg: 'Tháng 5 em nghỉ 12 ngày vì bệnh gút tái phát, phạt 450k. Tháng này em quay lại đủ sức rồi. Em sẽ tập trung gọi chủ cũ làm giá — nhà nào giảm trên 10% so với giá đã báo thì em cập nhật lên nhóm ngay, không để mất phần công làm giá.',
+      feature: 'Trí: comeback sau nghỉ dài, kế hoạch cụ thể để gỡ điểm',
       severity: 'medium',
-      emoji: '📉',
+      emoji: '💪',
     },
   },
   {
@@ -244,14 +244,14 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'mai',
     action: {
       type: 'speech',
-      msg: 'Tháng 5 nhóm mình bị phạt tổng 1,55 triệu vì đi trễ và nghỉ quá. Tháng 6 phải kỷ luật hơn anh ơi.',
-      feature: 'Tổng tiền phạt T5: 1.550.000đ — cần tăng kỷ luật',
+      msg: 'Em trễ 10 lần tháng 5, bị phạt 350k — nhiều nhất nhóm. Không có lý do biện hộ. Tiền đã rút rồi, không lấy lại được. Em đặt báo thức trước giờ vào 30 phút, tháng này là việc em làm đầu tiên.',
+      feature: 'Thắng: thẳng thắn nhận lỗi, không biện hộ, hành động cụ thể',
       severity: 'high',
-      emoji: '💸',
+      emoji: '🛠️',
     },
   },
 
-  // ═══ Hồi 2 (23–33s): Triệu tập họp — đọc bảng quy định nhóm ═══
+  // ═══ Hồi 2 (23–33s): Triệu tập họp — TN chốt quy định ═══
   { time: 23, who: 'duc', action: { type: 'callMeeting' } },
   { time: 24, who: 'tuan',     action: { type: 'walk', target: 'meeting' } },
   { time: 24, who: 'huong',    action: { type: 'walk', target: 'meeting' } },
@@ -268,14 +268,14 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'duc',
     action: {
       type: 'speech',
-      msg: 'QUY ĐỊNH NHÓM BOM TẤN: 1·DS = phí môi giới thực thu • 2·Báo nhà hợp lệ 1% • 3·Giá tốt báo nội bộ trước 3h • 4·Đi trễ ≤4 lần, nghỉ ≤3 ngày/tháng.',
-      feature: 'Bảng 4 quy định vận hành nhóm Bom Tấn',
+      msg: 'Chốt 4 quy định nhóm: DS tính trên phí môi giới thực thu — không phải giá căn. Báo hàng đủ thông tin mới hưởng 1%. Giá tốt báo nhóm mình trước 3 tiếng. Trễ quá 4 lần là phạt — không có ngoại lệ.',
+      feature: 'Trần Đăng Duy: 4 quy định cứng, không có ngoại lệ',
       severity: 'high',
       emoji: '📋',
     },
   },
 
-  // ═══ Hồi 3 (34–80s): Về bàn — DS, pipeline, quyền lợi, trọng tâm T6 ═══
+  // ═══ Hồi 3 (34–72s): Về bàn — mỗi người nói về vấn đề của mình ═══
   { time: 34, who: 'tuan',     action: { type: 'walk', target: 'desk' } },
   { time: 34, who: 'huong',    action: { type: 'walk', target: 'desk' } },
   { time: 34, who: 'linh',     action: { type: 'walk', target: 'desk' } },
@@ -291,8 +291,8 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'duc',
     action: {
       type: 'speech',
-      msg: 'Nửa đầu năm nhóm đạt 23,8% chỉ tiêu, chỉ 4/9 người có doanh số. Tháng 6 chuyển trọng tâm sang gọi chủ cũ, làm giá, săn nguồn hàng thật.',
-      feature: 'Tình hình 2 quý: 23,8% — trọng tâm T6 là nguồn hàng & làm giá',
+      msg: '618 triệu trong 5 tháng — 23,8% chỉ tiêu. Còn thiếu gần 2 tỷ. Tháng 6 tôi muốn ít nhất 6 người có giao dịch, không chỉ 4. Ai vẫn chưa có deal thì tôi ngồi riêng 15 phút để tìm ra vấn đề ở đâu.',
+      feature: 'Trần Đăng Duy: số thật 23,8%, mục tiêu 6/9 người có DS tháng 6',
       severity: 'high',
       emoji: '🎯',
     },
@@ -302,10 +302,10 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'huong',
     action: {
       type: 'speech',
-      msg: 'Theo dõi pipeline theo tuần: khách nóng, nhà nóng, chủ đang đàm phán, khả năng chốt — vậy mới không bị hụt chỉ tiêu cuối tháng.',
-      feature: 'Kiểm soát pipeline theo tuần (4 cột)',
+      msg: 'Anh nhận ra khách theo anh lâu nhất là khách từ 3-6 tháng trước, không phải lead mới. Tháng này anh dành 40% thời gian gọi lại khách cũ — họ đã tin tưởng mình, chỉ cần có căn phù hợp là chốt ngay.',
+      feature: 'Tuấn Dũng: insight — khách cũ 3-6 tháng có tỷ lệ chốt cao hơn',
       severity: 'medium',
-      emoji: '🔄',
+      emoji: '🔍',
     },
   },
   {
@@ -313,21 +313,21 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'khoa',
     action: {
       type: 'speech',
-      msg: 'Mỗi giao dịch chia theo 4 vai trò: người chốt chính hưởng phần còn lại, người báo nhà 1%, người làm giá 0,5%, người hỗ trợ hồ sơ.',
-      feature: '4 vai trò trong giao dịch & tỷ lệ chia phí môi giới',
+      msg: 'Em đã làm xong bảng Google Sheet theo dõi pipeline: cột khách nóng, nhà nóng, chủ đang đàm phán, xác suất chốt. Update mỗi sáng thứ Hai. Anh Duy muốn em share template lên nhóm Zalo cho cả nhóm dùng luôn không?',
+      feature: 'Khoa: đã làm bảng pipeline xong, đề nghị share template cả nhóm',
       severity: 'medium',
-      emoji: '💰',
+      emoji: '📊',
     },
   },
-  { time: 45, who: 'mai',     action: { type: 'walk', target: 'coffee' } },
+  { time: 45, who: 'mai',      action: { type: 'walk', target: 'coffee' } },
   { time: 46, who: 'thanhduy', action: { type: 'walk', target: 'coffee' } },
   {
     time: 47,
     who: 'thanhduy',
     action: {
       type: 'speech',
-      msg: 'Thi đua quay clip review nhà: gắn mic trên cổ áo, clip hoàn chỉnh không trùng lặp. Kim Cương 2 triệu, Vàng 1 triệu, Bạc 500k!',
-      feature: 'Thi đua quay clip: 3 hạng thưởng, bắt buộc gắn mic',
+      msg: 'Em thử quay clip review nhà tuần rồi rồi — một căn quay 3 góc khác nhau ra được 3 clip hợp lệ. Mic cài vào cổ áo là bắt buộc, không có mic là clip không được tính. Em đang nhắm giải Kim Cương 2 triệu luôn.',
+      feature: 'Thanh Duy: đã thử clip, chia tactic 3 góc/căn, nhắm Kim Cương',
       severity: 'medium',
       emoji: '🎬',
     },
@@ -337,10 +337,10 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'luan',
     action: {
       type: 'speech',
-      msg: 'Incentive tháng này: đạt 158 triệu thưởng 1,68 triệu; đạt 508 triệu thưởng 7,68 triệu; đạt 708 triệu nhận iPhone 17 Pro Max!',
-      feature: 'Chính sách incentive: 4 mốc doanh số — đỉnh là iPhone 17 Pro Max',
+      msg: 'Em tính xong rồi: hoa hồng một căn 100 triệu thì người báo nhà được 1 triệu, người làm giá được 500k. Mục tiêu tháng này em chốt đủ 508 triệu để lấy thưởng 7,68 triệu. iPhone 17 Pro Max thì cần 708 triệu — để tháng sau tính.',
+      feature: 'Luân: tự tính ngược từ thưởng, chốt mục tiêu 508 triệu tháng 6',
       severity: 'medium',
-      emoji: '🎁',
+      emoji: '🧮',
     },
   },
   {
@@ -348,10 +348,10 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'linh',
     action: {
       type: 'speech',
-      msg: 'Em mới vào, anh cho em biết cách gặp riêng 15 phút mỗi tuần với trưởng nhóm để chốt 1 việc phải làm và kiểm tra kết quả không ạ?',
-      feature: 'Cơ chế 1-1 tuần: nhân sự mới gặp trưởng nhóm 15 phút/tuần',
+      msg: 'Em quan sát thấy anh Công và anh Dũng chốt được là vì không dẫn khách vào căn chưa xác nhận còn bán. Tuần này em áp dụng: gọi 5 chủ nhà xác nhận trước, dẫn khách vào căn nào thì căn đó phải đang thật sự bán.',
+      feature: 'Thường: học từ quan sát người thành công, áp dụng ngay tuần này',
       severity: 'medium',
-      emoji: '🤙',
+      emoji: '👁️',
     },
   },
   { time: 55, who: 'mai',      action: { type: 'walk', target: 'desk' } },
@@ -361,8 +361,8 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'tri',
     action: {
       type: 'speech',
-      msg: 'Mỗi căn trọng điểm chỉ một đầu mối phụ trách, tránh nhiều người cùng gọi chủ gây loạn thông tin và giật giá.',
-      feature: 'Mỗi căn 1 đầu mối phụ trách — tránh gọi chồng chéo',
+      msg: 'Lần trước căn em đang theo, hai người khác cùng gọi chủ — chủ bị nhiễu thông tin, kéo giá lên lại mất 200 triệu tiền hoa hồng tiềm năng. Từ đó em thấy rõ: mỗi căn phải có đúng một người phụ trách, không ai gọi chồng lên.',
+      feature: 'Trí: mất deal thật vì gọi chồng chéo — bài học 200 triệu',
       severity: 'high',
       emoji: '🏠',
     },
@@ -372,8 +372,8 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'huy',
     action: {
       type: 'speech',
-      msg: 'Nhóm cũng cần được công ty hỗ trợ tiền đăng tin và danh sách nguồn hàng cũ cần làm giá để tăng đầu vào tháng 6.',
-      feature: 'Kiến nghị: hỗ trợ đăng tin & danh sách nguồn hàng cũ',
+      msg: 'Anh Duy kiến nghị ban lãnh đạo cho nhóm tiếp cận danh sách nguồn hàng tồn 6-12 tháng của công ty. Tụi em gọi làm giá, bán được thì trả bằng doanh số. Không xin tiền — chỉ xin data thôi.',
+      feature: 'Huy: kiến nghị cụ thể — đổi data nguồn hàng tồn lấy doanh số',
       severity: 'medium',
       emoji: '📢',
     },
@@ -383,8 +383,8 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'duc',
     action: {
       type: 'speech',
-      msg: 'Tháng 6 tổ chức đào tạo viết hợp đồng đặt cọc — anh chấm điểm theo lỗi sai thực tế. Ai làm được share kinh nghiệm cho cả nhóm.',
-      feature: 'Đào tạo HĐ đặt cọc + chia sẻ kinh nghiệm thực chiến',
+      msg: 'Tuần sau đào tạo viết hợp đồng đặt cọc. Ai đang có hồ sơ sắp chốt thì mang case thật vào — học từ tình huống thật, không học trên giấy. Anh chấm theo lỗi mỗi người hay mắc, không phải chấm lý thuyết chung.',
+      feature: 'Đào tạo HĐ đặt cọc từ case thật, chấm theo lỗi cá nhân',
       severity: 'high',
       emoji: '📝',
     },
@@ -394,10 +394,10 @@ export const SIMULATION_SCRIPT: ScriptEvent[] = [
     who: 'tuan',
     action: {
       type: 'speech',
-      msg: 'Rõ hết rồi anh! Tháng 6 tụi em tập trung gọi chủ, làm giá thật, quay clip, và kéo thêm người có doanh số cho nhóm Bom Tấn.',
-      feature: 'Cả nhóm cam kết: gọi chủ + làm giá + thi đua clip tháng 6',
+      msg: 'Tháng 4 nhóm đạt 361 triệu — kỷ lục từ đầu năm. Không phải may. Tuần đó mọi người gọi nhiều chủ, làm giá thật, khách đã sẵn sàng. Tháng 6 mình làm đúng quy trình đó là tự nhiên ra kết quả — không cần hứa hão.',
+      feature: 'Tam Công: tháng 4 đạt 361 triệu — lặp lại quy trình không hứa hão',
       severity: 'low',
-      emoji: '✅',
+      emoji: '🔑',
     },
   },
 ]
