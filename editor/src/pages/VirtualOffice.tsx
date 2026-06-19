@@ -82,9 +82,9 @@ export default function VirtualOffice() {
             🏠
           </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15 }}>Văn Phòng BĐS Ảo — App SKL (NhàPhốSG)</div>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>Văn Phòng BĐS Ảo — Nhóm Bom Tấn (Sài Gòn King Land)</div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
-              Phổ biến quy định nhóm khi vận hành App SKL · Kéo chuột để xoay góc nhìn
+              Họp nhóm Bom Tấn: quy định, doanh số & trọng tâm tháng · Kéo chuột để xoay góc nhìn
             </div>
           </div>
         </div>

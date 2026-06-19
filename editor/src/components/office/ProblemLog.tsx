@@ -52,7 +52,7 @@ export default function ProblemLog({ problems, time, speed, onSpeedChange, onRes
       {/* Header */}
       <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#FE2C55', marginBottom: 4 }}>
-          📋 Quy định nhóm — App SKL
+          📋 Họp nhóm Bom Tấn — Quy định & Trọng tâm
         </div>
         <div style={{ display: 'flex', gap: 10, fontSize: 11 }}>
           <span style={{ background: '#EF444430', color: '#EF4444', borderRadius: 4, padding: '2px 7px' }}>

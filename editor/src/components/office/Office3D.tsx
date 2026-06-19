@@ -77,7 +77,7 @@ function MeetingTable() {
         maxWidth={2.2}
         lineHeight={1.4}
       >
-        {'QUY DINH NHOM - App SKL:\n1. Du lieu thuoc nen tang\n2. Duyet truoc khi cong khai\n3. Lead 2h phai goi\n4. Hoa hong theo giao dich'}
+        {'QUY DINH NHOM BOM TAN:\n1. DS = phi moi gioi thuc thu\n2. Bao nha hop le huong 1%\n3. Bao gia tot len nhom truoc 3h\n4. Di tre toi da 4 lan/thang'}
       </Text>
       {/* Meeting chairs */}
       {[0, 1, 2, 3, 4, 5].map((i) => {
@@ -203,7 +203,7 @@ export default function Office3D({ problems }: { problems: { id: string; emoji: 
 
       {/* ── Company logo wall ── */}
       <Text position={[0, 4.5, -8.85]} fontSize={0.4} color="#D84E1E" anchorX="center" fontWeight="bold">
-        NhaPhoSG — App SKL · Nen tang video BDS nha pho
+SAI GON KING LAND · NHOM BOM TAN — Moi gioi BDS nha pho
       </Text>
 
       {/* ── Furniture ── */}
