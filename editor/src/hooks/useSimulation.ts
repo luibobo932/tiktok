@@ -80,6 +80,7 @@ async function speakOnTopic(
   history: ConvEntry[],
   isOpener: boolean,
   scenario: string | null,
+  priorDecision?: string,
 ): Promise<string> {
   const persona = PERSONAS.find((p) => p.id === personaId)!
   const system = buildSystemPrompt(personaId)
@@ -89,12 +90,16 @@ async function speakOnTopic(
       ? `[Các câu vừa nói trong cuộc họp:]\n${history.map((h) => `${h.name}: "${h.text}"`).join('\n')}\n\n`
       : ''
 
+  const followUp = priorDecision
+    ? `\n[Lần trước chủ đề này nhóm đã chốt: "${priorDecision}". ĐỪNG mở lại từ đầu — hãy hỏi tiến độ việc đó hoặc đẩy sâu thêm một góc mới.]`
+    : ''
+
   const user = isOpener
-    ? `[Cuộc họp nhóm Bom Tấn. Trưởng nhóm Duy mở một chủ đề mới để phát triển nhóm.]
+    ? `[Cuộc họp nhóm Bom Tấn. Trưởng nhóm Duy ${priorDecision ? 'quay lại' : 'mở'} một chủ đề để phát triển nhóm.]
 Chủ đề: "${topic.title}".
 Trọng tâm: ${topic.focus}
-Gợi ý: ${topic.opener}${scenarioLine}
-${historyText}Duy mở đầu chủ đề này thế nào? Nêu vấn đề bằng giọng trưởng nhóm và hỏi anh em một câu cụ thể.`
+Gợi ý: ${topic.opener}${followUp}${scenarioLine}
+${historyText}Duy mở đầu chủ đề này thế nào? Nêu vấn đề bằng giọng trưởng nhóm và hỏi anh em một câu cụ thể, không lặp lại điều đã nói.`
     : `[Cuộc họp nhóm Bom Tấn đang bàn chủ đề: "${topic.title}".]
 Trọng tâm: ${topic.focus}${scenarioLine}
 ${historyText}Cả phòng đang chờ ${persona.name} góp ý ĐÚNG vào chủ đề này (không lạc đề). ${persona.name} nói gì?`
@@ -102,6 +107,31 @@ ${historyText}Cả phòng đang chờ ${persona.name} góp ý ĐÚNG vào chủ 
   let text = await ollamaChat(system, user)
   text = text.replace(new RegExp(`^${persona.name}\\s*[:：-]\\s*`, 'i'), '').trim()
   return text
+}
+
+// Adaptive topic pick: avoid immediate repeat, favor unseen topics, and let the
+// team's mood steer (high stress → discipline; low morale → target/morale).
+function pickTopic(prevId: string | null, mood: Record<string, Mood>, covered: Set<string>): AgendaTopic {
+  const ids = Object.keys(mood)
+  const avg = (sel: (m: Mood) => number) => ids.reduce((a, id) => a + sel(mood[id]), 0) / Math.max(1, ids.length)
+  const avgStress = avg((m) => m.apLuc)
+  const avgMorale = avg((m) => m.tinhThan)
+
+  const weights = AGENDA.map((t) => {
+    if (t.id === prevId) return 0
+    let w = 2
+    if (!covered.has(t.id)) w += 3 // see fresh topics first
+    if (avgStress > 65 && (t.id === 'discipline' || t.id === 'listings')) w += 3
+    if (avgMorale < 55 && (t.id === 'target' || t.id === 'discipline')) w += 2
+    return w
+  })
+  const total = weights.reduce((a, b) => a + b, 0)
+  let r = Math.random() * total
+  for (let i = 0; i < AGENDA.length; i++) {
+    r -= weights[i]
+    if (r <= 0) return AGENDA[i]
+  }
+  return AGENDA[0]
 }
 
 async function distillActionItem(topic: AgendaTopic, topicLines: ConvEntry[]): Promise<string> {
@@ -288,7 +318,12 @@ export function useSimulation() {
     const myRun = runIdRef.current
     const alive = () => runIdRef.current === myRun
 
-    async function takeTurn(speakerId: string, topic: AgendaTopic, isOpener: boolean): Promise<string> {
+    async function takeTurn(
+      speakerId: string,
+      topic: AgendaTopic,
+      isOpener: boolean,
+      priorDecision?: string,
+    ): Promise<string> {
       const persona = PERSONAS.find((p) => p.id === speakerId)!
       applyState((s) => {
         s.characters[speakerId].isThinking = true
@@ -299,7 +334,7 @@ export function useSimulation() {
 
       let text = ''
       try {
-        text = await speakOnTopic(speakerId, topic, convHistoryRef.current, isOpener, scenarioRef.current)
+        text = await speakOnTopic(speakerId, topic, convHistoryRef.current, isOpener, scenarioRef.current, priorDecision)
       } catch (err) {
         console.warn(`[${speakerId}] error:`, err)
         applyState((s) => {
@@ -356,10 +391,14 @@ export function useSimulation() {
 
     async function meetingLoop() {
       await sleep(1500)
-      let topicIdx = 0
+      let cycleCount = 0
+      let prevId: string | null = null
+      const covered = new Set<string>()
       while (alive()) {
-        const topic = AGENDA[topicIdx % AGENDA.length]
-        topicIdx++
+        const topic = pickTopic(prevId, stateRef.current.mood, covered)
+        prevId = topic.id
+        covered.add(topic.id)
+        cycleCount++
         applyState((s) => {
           s.currentTopic = { id: topic.id, title: topic.title }
         })
@@ -367,7 +406,11 @@ export function useSimulation() {
         const topicLines: ConvEntry[] = []
         const memberLines: { id: string; name: string; text: string }[] = []
 
-        const opener = await takeTurn('duc', topic, true)
+        // If this topic was decided before, leader follows up instead of re-asking.
+        const prior = [...stateRef.current.actionItems]
+          .reverse()
+          .find((a) => a.kind !== 'insight' && a.topicTitle === topic.title)
+        const opener = await takeTurn('duc', topic, true, prior?.text)
         if (!alive()) break
         if (opener) topicLines.push({ name: 'Trần Đăng Duy', text: opener })
 
@@ -417,7 +460,7 @@ export function useSimulation() {
         if (!alive()) break
 
         // Reflection every 3 topics
-        if (topicIdx % 3 === 0) {
+        if (cycleCount % 3 === 0) {
           try {
             const recent = stateRef.current.actionItems
               .filter((a) => a.kind !== 'insight')
