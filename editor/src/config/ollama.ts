@@ -7,5 +7,7 @@ export const OLLAMA_OPTIONS = {
   top_p: 0.9,
 }
 
-export const SPEAK_INTERVAL_MS = { min: 9000, max: 20000 }
-export const CONVERSATION_HISTORY_LIMIT = 8
+// Turn-based conversation timing
+export const READING_TIME = { perChar: 85, min: 4000, max: 10000 } // how long a line stays up so everyone can read
+export const PAUSE_BETWEEN = { min: 1800, max: 4000 } // silent gap after a line before next person thinks
+export const CONVERSATION_HISTORY_LIMIT = 12 // how many past lines each character "remembers"

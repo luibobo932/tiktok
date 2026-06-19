@@ -6,11 +6,12 @@ import {
   OLLAMA_URL,
   OLLAMA_MODEL,
   OLLAMA_OPTIONS,
-  SPEAK_INTERVAL_MS,
+  READING_TIME,
+  PAUSE_BETWEEN,
   CONVERSATION_HISTORY_LIMIT,
 } from '../config/ollama'
 
-export type CharacterBehavior = 'sitting' | 'walking' | 'talking' | 'frustrated' | 'meeting' | 'coffee'
+export type CharacterBehavior = 'sitting' | 'walking' | 'talking' | 'frustrated' | 'meeting' | 'coffee' | 'listening'
 
 export interface CharacterState {
   persona: PersonaData
@@ -43,10 +44,10 @@ async function callOllama(personaId: string, history: ConvEntry[]): Promise<stri
 
   const historyText =
     history.length > 0
-      ? `[Cuộc trò chuyện vừa rồi:]\n${history.map((h) => `- ${h.name}: "${h.text}"`).join('\n')}\n\n`
-      : ''
+      ? `[Cuộc họp đang diễn ra, các câu vừa nói:]\n${history.map((h) => `${h.name}: "${h.text}"`).join('\n')}\n\n`
+      : '[Cuộc họp vừa bắt đầu, chưa ai nói gì.]\n\n'
 
-  const userMsg = `${historyText}Bây giờ ${persona.name} nói gì?`
+  const userMsg = `${historyText}Cả phòng đang im lặng chờ ${persona.name} nói. ${persona.name} đáp lại gì?`
 
   const res = await fetch(OLLAMA_URL, {
     method: 'POST',
@@ -67,11 +68,11 @@ async function callOllama(personaId: string, history: ConvEntry[]): Promise<stri
 
   const data = await res.json()
   let text: string = data.message?.content ?? ''
-  // Strip Qwen3 thinking blocks
   text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
-  // Strip surrounding quotes
   text = text.replace(/^["'"']+|["'"']+$/g, '').trim()
-  return text || '...'
+  // Strip a leading "Name:" if the model added one
+  text = text.replace(new RegExp(`^${persona.name}\\s*[:：-]\\s*`, 'i'), '').trim()
+  return text
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -80,21 +81,11 @@ function deskTarget(personaId: string): THREE.Vector3 {
   return (WAYPOINTS as Record<string, THREE.Vector3>)[`${personaId}_desk`]
 }
 
-// 10 seats around the meeting table (center -5.5, 0, -4.5), radius 2.4
-const MEETING_SEATS: Record<string, THREE.Vector3> = (() => {
-  const cx = -5.5, cz = -4.5, r = 2.4
-  const ids = ['tuan', 'huong', 'linh', 'luan', 'mai', 'duc', 'khoa', 'thanhduy', 'tri', 'huy']
-  const seats: Record<string, THREE.Vector3> = {}
-  ids.forEach((id, i) => {
-    const angle = (i / ids.length) * Math.PI * 2
-    seats[id] = new THREE.Vector3(cx + Math.sin(angle) * r, 0, cz + Math.cos(angle) * r)
-  })
-  return seats
-})()
-
 function randomBetween(min: number, max: number) {
   return Math.random() * (max - min) + min
 }
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
 function initialState(): SimState {
   const characters: Record<string, CharacterState> = {}
@@ -118,134 +109,159 @@ function initialState(): SimState {
 
 export function useSimulation() {
   const [state, setState] = useState<SimState>(initialState)
+  const [generation, setGeneration] = useState(0)
   const stateRef = useRef<SimState>(initialState())
   const lastTickRef = useRef<number>(performance.now())
   const convHistoryRef = useRef<ConvEntry[]>([])
-  const aliveRef = useRef(true)
+  const recentSpeakersRef = useRef<string[]>([])
+  const runIdRef = useRef(0)
 
-  // ── Mutate stateRef and schedule a re-render ──
-  const patchChar = useCallback(
-    (id: string, patch: Partial<CharacterState>, newProblem?: Problem) => {
-      const s = stateRef.current
-      const updated = {
-        ...s,
-        characters: {
-          ...s.characters,
-          [id]: { ...s.characters[id], ...patch },
-        },
-        problems: newProblem
-          ? [...s.problems.slice(-49), newProblem]
-          : s.problems,
-      }
-      stateRef.current = updated
-      setState({ ...updated })
-    },
-    [],
-  )
+  // ── Apply a partial patch across many characters at once ──
+  const applyState = useCallback((mutator: (chars: Record<string, CharacterState>) => void, newProblem?: Problem) => {
+    const s = stateRef.current
+    const chars: Record<string, CharacterState> = {}
+    for (const id of Object.keys(s.characters)) chars[id] = { ...s.characters[id] }
+    mutator(chars)
+    const updated: SimState = {
+      ...s,
+      characters: chars,
+      problems: newProblem ? [...s.problems.slice(-49), newProblem] : s.problems,
+    }
+    stateRef.current = updated
+    setState({ ...updated })
+  }, [])
 
-  // ── Trigger walk ──────────────────────────────────────────────────────────
-  const triggerWalk = useCallback(
-    (personaId: string, dest: 'desk' | 'coffee' | 'meeting') => {
-      let target: THREE.Vector3
-      if (dest === 'desk') target = deskTarget(personaId).clone()
-      else if (dest === 'coffee')
-        target = WAYPOINTS.coffee
-          .clone()
-          .add(new THREE.Vector3((Math.random() - 0.5) * 1.5, 0, (Math.random() - 0.5) * 1.5))
-      else target = MEETING_SEATS[personaId]?.clone() ?? WAYPOINTS.meeting.clone()
+  // ── Pick who speaks next: never the same twice, favor those silent longest ──
+  const pickNextSpeaker = useCallback((): string => {
+    const ids = PERSONAS.map((p) => p.id)
+    const recent = recentSpeakersRef.current
+    const last = recent[recent.length - 1]
 
-      patchChar(personaId, { target, behavior: 'walking' })
-    },
-    [patchChar],
-  )
+    const weights = ids.map((id) => {
+      if (id === last) return 0 // never speak twice in a row
+      const idx = recent.lastIndexOf(id)
+      if (idx === -1) return 4 // hasn't spoken in window — most likely
+      const recency = recent.length - idx // 1 = just spoke
+      return Math.max(1, recency) // longer since spoke → higher weight
+    })
 
-  // ── Trigger speech ────────────────────────────────────────────────────────
-  const triggerSpeech = useCallback(
-    (personaId: string, text: string) => {
-      const persona = PERSONAS.find((p) => p.id === personaId)!
-      const emoji = PERSONA_EMOJIS[personaId] ?? '💬'
+    const total = weights.reduce((a, b) => a + b, 0)
+    let r = Math.random() * total
+    for (let i = 0; i < ids.length; i++) {
+      r -= weights[i]
+      if (r <= 0) return ids[i]
+    }
+    return ids[0]
+  }, [])
 
-      convHistoryRef.current = [
-        ...convHistoryRef.current.slice(-(CONVERSATION_HISTORY_LIMIT - 1)),
-        { name: persona.name, text },
-      ]
+  // ── Make all listeners turn to face the speaker ──
+  const faceTowardSpeaker = useCallback((chars: Record<string, CharacterState>, speakerId: string) => {
+    const sp = chars[speakerId].position
+    for (const id of Object.keys(chars)) {
+      if (id === speakerId) continue
+      const lp = chars[id].position
+      const dx = sp.x - lp.x
+      const dz = sp.z - lp.z
+      chars[id].facingAngle = Math.atan2(dx, dz)
+      chars[id].behavior = 'listening'
+      chars[id].isThinking = false
+    }
+  }, [])
 
-      const problem: Problem = {
-        id: `${Date.now()}-${personaId}`,
-        timestamp: stateRef.current.time,
-        who: personaId,
-        personaName: persona.name,
-        role: persona.role,
-        color: persona.color,
-        message: text,
-        severity: PERSONA_SEVERITY[personaId] ?? 'medium',
-        emoji,
-      }
-
-      patchChar(
-        personaId,
-        {
-          speech: `${emoji} ${text}`,
-          speechExpiry: stateRef.current.time + 7,
-          behavior: 'talking',
-          isThinking: false,
-        },
-        problem,
-      )
-    },
-    [patchChar],
-  )
-
-  // ── Autonomous AI loop for each character ─────────────────────────────────
+  // ── The single conversation loop ──────────────────────────────────────────
   useEffect(() => {
-    aliveRef.current = true
+    runIdRef.current += 1
+    const myRun = runIdRef.current
 
-    async function characterLoop(personaId: string, startDelay: number) {
-      await new Promise<void>((r) => setTimeout(r, startDelay))
+    async function conversationLoop() {
+      // brief settle before first line
+      await sleep(1500)
 
-      while (aliveRef.current) {
-        // Show thinking indicator
-        patchChar(personaId, { isThinking: true })
+      while (runIdRef.current === myRun) {
+        const speakerId = pickNextSpeaker()
+        const persona = PERSONAS.find((p) => p.id === speakerId)!
 
+        // 1) Everyone goes quiet; speaker starts thinking, others face & listen
+        applyState((chars) => {
+          chars[speakerId].isThinking = true
+          chars[speakerId].behavior = 'sitting'
+          chars[speakerId].speech = null
+          faceTowardSpeaker(chars, speakerId)
+        })
+
+        // 2) Generate the line (this latency IS the "thinking carefully" beat)
+        let text = ''
         try {
-          const text = await callOllama(personaId, convHistoryRef.current)
-          if (!aliveRef.current) break
-          triggerSpeech(personaId, text)
+          text = await callOllama(speakerId, convHistoryRef.current)
         } catch (err) {
-          console.warn(`[${personaId}] Ollama error:`, err)
-          patchChar(personaId, { isThinking: false })
-          // Retry after longer delay on error
-          await new Promise<void>((r) => setTimeout(r, 20000))
+          console.warn(`[${speakerId}] Ollama error:`, err)
+          applyState((chars) => {
+            chars[speakerId].isThinking = false
+          })
+          await sleep(8000)
+          continue
+        }
+        if (runIdRef.current !== myRun) break
+        if (!text) {
+          applyState((chars) => {
+            chars[speakerId].isThinking = false
+          })
           continue
         }
 
-        // Occasionally walk after speaking
-        const rnd = Math.random()
-        if (rnd < 0.18) {
-          setTimeout(() => triggerWalk(personaId, 'coffee'), 2000)
-          setTimeout(() => triggerWalk(personaId, 'desk'), 12000)
-        } else if (rnd < 0.30) {
-          setTimeout(() => triggerWalk(personaId, 'meeting'), 2000)
-          setTimeout(() => triggerWalk(personaId, 'desk'), 15000)
+        // 3) Record into shared memory so everyone "remembers"
+        convHistoryRef.current = [
+          ...convHistoryRef.current.slice(-(CONVERSATION_HISTORY_LIMIT - 1)),
+          { name: persona.name, text },
+        ]
+        recentSpeakersRef.current = [...recentSpeakersRef.current.slice(-6), speakerId]
+
+        const emoji = PERSONA_EMOJIS[speakerId] ?? '💬'
+        const problem: Problem = {
+          id: `${Date.now()}-${speakerId}`,
+          timestamp: stateRef.current.time,
+          who: speakerId,
+          personaName: persona.name,
+          role: persona.role,
+          color: persona.color,
+          message: text,
+          severity: PERSONA_SEVERITY[speakerId] ?? 'medium',
+          emoji,
         }
 
-        // Wait before next thought
-        const wait = randomBetween(SPEAK_INTERVAL_MS.min, SPEAK_INTERVAL_MS.max)
-        await new Promise<void>((r) => setTimeout(r, wait))
+        // 4) Speaker talks; everyone else stays listening
+        applyState((chars) => {
+          chars[speakerId].isThinking = false
+          chars[speakerId].behavior = 'talking'
+          chars[speakerId].speech = `${emoji} ${text}`
+          chars[speakerId].facingAngle = Math.PI // face the room/camera while talking
+        }, problem)
+
+        // 5) Hold the line up long enough for everyone to read & absorb
+        const readMs = Math.min(
+          READING_TIME.max,
+          Math.max(READING_TIME.min, text.length * READING_TIME.perChar),
+        )
+        await sleep(readMs)
+        if (runIdRef.current !== myRun) break
+
+        // 6) Clear the bubble, brief reflective silence before next person
+        applyState((chars) => {
+          chars[speakerId].speech = null
+          chars[speakerId].behavior = 'sitting'
+        })
+        await sleep(randomBetween(PAUSE_BETWEEN.min, PAUSE_BETWEEN.max))
       }
     }
 
-    // Stagger start: 0s, 2s, 4s, ... 18s so characters don't all speak at once
-    PERSONAS.forEach((p, i) => {
-      characterLoop(p.id, i * 2000)
-    })
+    conversationLoop()
 
     return () => {
-      aliveRef.current = false
+      runIdRef.current += 1 // invalidate this loop
     }
-  }, [patchChar, triggerSpeech, triggerWalk])
+  }, [applyState, pickNextSpeaker, faceTowardSpeaker, generation])
 
-  // ── Animation tick (position + speech expiry) ─────────────────────────────
+  // ── Animation tick (smooth motion + time) ─────────────────────────────────
   useEffect(() => {
     let rafId: number
 
@@ -264,36 +280,18 @@ export function useSimulation() {
       for (const id of Object.keys(updatedChars)) {
         const ch = { ...updatedChars[id] }
         const dist = ch.position.distanceTo(ch.target)
-
         if (dist > 0.12) {
           const dir = ch.target.clone().sub(ch.position).normalize()
           ch.position = ch.position.clone().add(dir.multiplyScalar(delta * 2.5))
-          ch.facingAngle = Math.atan2(dir.x, dir.z)
           ch.behavior = 'walking'
           anyChange = true
-        } else if (ch.behavior === 'walking') {
-          const atDesk = ch.position.distanceTo(deskTarget(id)) < 0.8
-          const atMeeting = ch.position.distanceTo(WAYPOINTS.meeting) < 3.0
-          const atCoffee = ch.position.distanceTo(WAYPOINTS.coffee) < 2.5
-          ch.behavior = atMeeting ? 'meeting' : atCoffee ? 'coffee' : atDesk ? 'sitting' : 'sitting'
-          anyChange = true
         }
-
-        if (ch.speech && newTime > ch.speechExpiry) {
-          ch.speech = null
-          if (ch.behavior === 'talking') {
-            ch.behavior = ch.position.distanceTo(deskTarget(id)) < 1 ? 'sitting' : 'sitting'
-          }
-          anyChange = true
-        }
-
         updatedChars[id] = ch
       }
 
       const newState: SimState = { ...s, time: newTime, characters: anyChange ? updatedChars : s.characters }
       stateRef.current = newState
       setState(newState)
-
       rafId = requestAnimationFrame(tick)
     }
 
@@ -308,12 +306,11 @@ export function useSimulation() {
 
   const reset = useCallback(() => {
     convHistoryRef.current = []
-    aliveRef.current = false
+    recentSpeakersRef.current = []
     const fresh = initialState()
     stateRef.current = fresh
     setState(fresh)
-    // Restart loops after a brief pause
-    setTimeout(() => { aliveRef.current = true }, 100)
+    setGeneration((g) => g + 1) // re-runs the conversation effect → fresh loop
   }, [])
 
   return { state, setSpeed, reset }

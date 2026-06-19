@@ -79,9 +79,9 @@ function MeetingTable() {
       >
         {'QUY DINH NHOM BOM TAN:\n1. DS = phi moi gioi thuc thu\n2. Bao nha hop le huong 1%\n3. Bao gia tot len nhom truoc 3h\n4. Di tre toi da 4 lan/thang'}
       </Text>
-      {/* Meeting chairs — 10 people */}
-      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => {
-        const angle = (i / 10) * Math.PI * 2
+      {/* Meeting chairs — 9 people */}
+      {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => {
+        const angle = (i / 9) * Math.PI * 2
         const r = 2.4
         return (
           <mesh key={i} position={[Math.sin(angle) * r, 0.38, Math.cos(angle) * r]} receiveShadow>
@@ -207,18 +207,17 @@ SAI GON KING LAND · NHOM BOM TAN — Moi gioi BDS nha pho
       </Text>
 
       {/* ── Furniture ── */}
-      {/* Row 1 desks (z=3) — 5 desks */}
-      <Desk position={[-9.5, 0.72, 3]} color="#8B5CF6" />
-      <Desk position={[-6.5, 0.72, 3]} color="#3B82F6" />
-      <Desk position={[-2.5, 0.72, 3]} color="#10B981" />
-      <Desk position={[1.5, 0.72, 3]} color="#F59E0B" />
-      <Desk position={[5, 0.72, 3]} color="#EF4444" />
+      {/* Row 1 desks (z=3) — 4 desks */}
+      <Desk position={[-8, 0.72, 3]} color="#8B5CF6" />
+      <Desk position={[-4, 0.72, 3]} color="#3B82F6" />
+      <Desk position={[0, 0.72, 3]} color="#10B981" />
+      <Desk position={[4, 0.72, 3]} color="#EF4444" />
       {/* Row 2 desks (z=0) — 5 desks */}
-      <Desk position={[-7.5, 0.72, 0]} color="#06B6D4" />
-      <Desk position={[-4.5, 0.72, 0]} color="#6366F1" />
+      <Desk position={[-8, 0.72, 0]} color="#06B6D4" />
+      <Desk position={[-4, 0.72, 0]} color="#6366F1" />
       <Desk position={[0, 0.72, 0]} color="#EC4899" />
-      <Desk position={[3.5, 0.72, 0]} color="#F97316" />
-      <Desk position={[7.5, 0.72, 0]} color="#84CC16" />
+      <Desk position={[4, 0.72, 0]} color="#F97316" />
+      <Desk position={[8, 0.72, 0]} color="#84CC16" />
 
       {/* Meeting room */}
       <MeetingTable />

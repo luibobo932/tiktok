@@ -59,8 +59,8 @@ export default function Character3D({ charState }: Props) {
       if (rightArmRef.current) rightArmRef.current.rotation.x = swing * 0.5
       // Bob
       g.position.y = Math.abs(Math.sin(walkPhaseRef.current * 0.5)) * 0.06
-    } else if (behavior === 'sitting') {
-      // Lean forward
+    } else if (behavior === 'sitting' || behavior === 'listening') {
+      // Lean forward (attentive while listening)
       if (leftLegRef.current) leftLegRef.current.rotation.x = -Math.PI * 0.35
       if (rightLegRef.current) rightLegRef.current.rotation.x = -Math.PI * 0.35
       if (leftArmRef.current) leftArmRef.current.rotation.x = -0.3
