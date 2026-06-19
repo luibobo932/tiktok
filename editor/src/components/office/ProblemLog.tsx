@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Problem } from '../../data/simulation'
+import { Problem, SCRIPT_DURATION } from '../../data/simulation'
 
 const SEV_COLOR: Record<string, string> = {
   high: '#EF4444',
@@ -106,7 +106,7 @@ export default function ProblemLog({ problems, time, speed, onSpeedChange, onRes
           <div
             style={{
               height: '100%',
-              width: `${((time % 68) / 68) * 100}%`,
+              width: `${((time % SCRIPT_DURATION) / SCRIPT_DURATION) * 100}%`,
               background: '#FE2C55',
               borderRadius: 2,
               transition: 'width 0.1s linear',
