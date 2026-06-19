@@ -67,13 +67,17 @@ export default function Character3D({ charState }: Props) {
       if (rightArmRef.current) rightArmRef.current.rotation.x = -0.3
       g.position.y = -0.28
     } else if (behavior === 'talking' || behavior === 'frustrated') {
-      shakeRef.current += delta * 12
-      const shake = Math.sin(shakeRef.current) * 0.06
-      g.position.x += shake
-      if (bodyRef.current) bodyRef.current.rotation.z = Math.sin(shakeRef.current * 0.5) * 0.08
+      // Calm "speaking" gesture: gentle arm motion only — no body shaking
+      shakeRef.current += delta * 2.5
+      const gesture = (Math.sin(shakeRef.current) * 0.5 + 0.5) * 0.22
+      if (leftArmRef.current) leftArmRef.current.rotation.x = -gesture
+      if (rightArmRef.current) rightArmRef.current.rotation.x = -gesture * 0.5
+      if (bodyRef.current) bodyRef.current.rotation.z = 0
+      g.position.y = 0
     } else if (behavior === 'meeting') {
       if (leftArmRef.current) leftArmRef.current.rotation.x = -0.2
       if (rightArmRef.current) rightArmRef.current.rotation.x = -0.2
+      if (bodyRef.current) bodyRef.current.rotation.z = 0
       g.position.y = 0
     } else if (behavior === 'coffee') {
       // Slight sway
