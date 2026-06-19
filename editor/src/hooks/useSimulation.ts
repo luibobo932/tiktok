@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import * as THREE from 'three'
 import { PERSONAS, WAYPOINTS, Problem, ActionItem, PersonaData } from '../data/simulation'
-import { PERSONA_SYSTEM_PROMPTS, PERSONA_EMOJIS, PERSONA_SEVERITY } from '../data/personaPrompts'
-import { AGENDA, SECRETARY_PROMPT, OBSERVER_PROMPT, AgendaTopic } from '../data/meetingAgenda'
+import { buildSystemPrompt, PERSONA_EMOJIS, PERSONA_SEVERITY } from '../data/personaPrompts'
+import { AGENDA, SECRETARY_PROMPT, OBSERVER_PROMPT, COACH_PROMPT, AgendaTopic } from '../data/meetingAgenda'
+import { BASELINE_MOOD, Mood } from '../data/teamData'
 import {
   OLLAMA_URL,
   OLLAMA_MODEL,
@@ -29,7 +30,10 @@ export interface SimState {
   characters: Record<string, CharacterState>
   problems: Problem[]
   actionItems: ActionItem[]
+  coaching: { id: string; personaId: string; name: string; color: string; advice: string }[]
+  mood: Record<string, Mood>
   currentTopic: { id: string; title: string } | null
+  scenario: string | null
   time: number
   speed: number
 }
@@ -37,6 +41,12 @@ export interface SimState {
 interface ConvEntry {
   name: string
   text: string
+}
+
+const STORE_KEY = 'bomtan_sim_v2'
+const CALL_NAME: Record<string, string> = {
+  duc: 'Duy', huy: 'Huy', tuan: 'Công', huong: 'Dũng', luan: 'Luân',
+  tri: 'Trí', mai: 'Thắng', khoa: 'Khoa', thanhduy: 'Thanh Duy',
 }
 
 // ── Ollama ────────────────────────────────────────────────────────────────────
@@ -52,7 +62,7 @@ async function ollamaChat(system: string, user: string, opts: Record<string, unk
         { role: 'user', content: user },
       ],
       stream: false,
-      think: false, // top-level param disables Qwen3 thinking mode
+      think: false,
       options: { ...OLLAMA_OPTIONS, ...opts },
     }),
   })
@@ -64,16 +74,16 @@ async function ollamaChat(system: string, user: string, opts: Record<string, unk
   return text
 }
 
-// A character speaks on the current agenda topic, having heard the recent lines.
 async function speakOnTopic(
   personaId: string,
   topic: AgendaTopic,
   history: ConvEntry[],
   isOpener: boolean,
+  scenario: string | null,
 ): Promise<string> {
   const persona = PERSONAS.find((p) => p.id === personaId)!
-  const system = PERSONA_SYSTEM_PROMPTS[personaId] ?? ''
-
+  const system = buildSystemPrompt(personaId)
+  const scenarioLine = scenario ? `\n[TÌNH HUỐNG ĐANG XẢY RA, hãy phản ứng với nó: ${scenario}]\n` : ''
   const historyText =
     history.length > 0
       ? `[Các câu vừa nói trong cuộc họp:]\n${history.map((h) => `${h.name}: "${h.text}"`).join('\n')}\n\n`
@@ -83,12 +93,10 @@ async function speakOnTopic(
     ? `[Cuộc họp nhóm Bom Tấn. Trưởng nhóm Duy mở một chủ đề mới để phát triển nhóm.]
 Chủ đề: "${topic.title}".
 Trọng tâm: ${topic.focus}
-Gợi ý: ${topic.opener}
-
-Duy mở đầu chủ đề này thế nào? Nêu vấn đề bằng giọng trưởng nhóm và hỏi anh em một câu cụ thể.`
+Gợi ý: ${topic.opener}${scenarioLine}
+${historyText}Duy mở đầu chủ đề này thế nào? Nêu vấn đề bằng giọng trưởng nhóm và hỏi anh em một câu cụ thể.`
     : `[Cuộc họp nhóm Bom Tấn đang bàn chủ đề: "${topic.title}".]
-Trọng tâm: ${topic.focus}
-
+Trọng tâm: ${topic.focus}${scenarioLine}
 ${historyText}Cả phòng đang chờ ${persona.name} góp ý ĐÚNG vào chủ đề này (không lạc đề). ${persona.name} nói gì?`
 
   let text = await ollamaChat(system, user)
@@ -96,30 +104,50 @@ ${historyText}Cả phòng đang chờ ${persona.name} góp ý ĐÚNG vào chủ 
   return text
 }
 
-// Secretary distills the topic discussion into one concrete action item for Duy.
 async function distillActionItem(topic: AgendaTopic, topicLines: ConvEntry[]): Promise<string> {
   if (topicLines.length === 0) return ''
-  const user = `Chủ đề: "${topic.title}".
-Trao đổi của nhóm:
-${topicLines.map((l) => `- ${l.name}: ${l.text}`).join('\n')}
-
-Việc cần làm cho trưởng nhóm Duy là gì?`
+  const user = `Chủ đề: "${topic.title}".\nTrao đổi của nhóm:\n${topicLines
+    .map((l) => `- ${l.name}: ${l.text}`)
+    .join('\n')}\n\nViệc cần làm cho trưởng nhóm Duy là gì?`
   let text = await ollamaChat(SECRETARY_PROMPT, user, { temperature: 0.5, num_predict: 70 })
-  text = text.replace(/^[-•\d.\s]+/, '').replace(/^["'"']+|["'"']+$/g, '').trim()
-  return text
+  return text.replace(/^[-•\d.\s]+/, '').replace(/^["'"']+|["'"']+$/g, '').trim()
 }
 
-// Observer reflects across several action items into one higher-level insight.
-// (Reflection mechanism, à la Stanford "Generative Agents".)
 async function distillInsight(recentActions: string[]): Promise<string> {
   if (recentActions.length === 0) return ''
-  const user = `Các việc cần làm vừa rút ra từ cuộc họp:
-${recentActions.map((a, i) => `${i + 1}. ${a}`).join('\n')}
+  const user = `Các việc cần làm vừa rút ra từ cuộc họp:\n${recentActions
+    .map((a, i) => `${i + 1}. ${a}`)
+    .join('\n')}\n\nNhận định chiến lược tầm cao cho trưởng nhóm Duy là gì?`
+  let text = await ollamaChat(OBSERVER_PROMPT, user, { temperature: 0.6, num_predict: 90 })
+  return text.replace(/^[-•\d.\s]+/, '').replace(/^["'"']+|["'"']+$/g, '').trim()
+}
 
-Nhận định chiến lược tầm cao cho trưởng nhóm Duy là gì?`
-  let text = await ollamaChat(OBSERVER_PROMPT, user, { temperature: 0.6, num_predict: 80 })
-  text = text.replace(/^[-•\d.\s]+/, '').replace(/^["'"']+|["'"']+$/g, '').trim()
-  return text
+// Batched coaching: 1 call → 1 advice line per participant who spoke.
+async function coachParticipants(
+  topic: AgendaTopic,
+  memberLines: { id: string; name: string; text: string }[],
+): Promise<Record<string, string>> {
+  if (memberLines.length === 0) return {}
+  const user = `Chủ đề: "${topic.title}".\nCác nhân viên vừa phát biểu:\n${memberLines
+    .map((l) => `${CALL_NAME[l.id] ?? l.name}: "${l.text}"`)
+    .join('\n')}\n\nVới mỗi người, cho Duy 1 nước đi quản trị (đúng định dạng "Tên: lời khuyên").`
+  const text = await ollamaChat(COACH_PROMPT, user, { temperature: 0.6, num_predict: 200 })
+  const out: Record<string, string> = {}
+  for (const raw of text.split('\n')) {
+    const line = raw.replace(/^[-•\d.\s]+/, '').trim()
+    const m = line.match(/^([^:：]+)[:：]\s*(.+)$/)
+    if (!m) continue
+    const who = m[1].trim().toLowerCase()
+    const advice = m[2].replace(/^(nước đi|nuoc di)\s*[:：-]\s*/i, '').trim()
+    for (const l of memberLines) {
+      const call = (CALL_NAME[l.id] ?? '').toLowerCase()
+      if (who === call || who.includes(call) || l.name.toLowerCase().includes(who)) {
+        out[l.id] = advice
+        break
+      }
+    }
+  }
+  return out
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -131,6 +159,25 @@ function randomBetween(min: number, max: number) {
   return Math.random() * (max - min) + min
 }
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+const clamp = (n: number) => Math.max(0, Math.min(100, n))
+
+function freshMood(): Record<string, Mood> {
+  const m: Record<string, Mood> = {}
+  for (const p of PERSONAS) m[p.id] = { ...(BASELINE_MOOD[p.id] ?? { tinhThan: 60, nangLuong: 60, apLuc: 50 }) }
+  return m
+}
+
+function loadPersisted(): Partial<SimState> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = localStorage.getItem(STORE_KEY)
+    if (!raw) return {}
+    const d = JSON.parse(raw)
+    return { actionItems: d.actionItems ?? [], coaching: d.coaching ?? [], mood: d.mood ?? freshMood() }
+  } catch {
+    return {}
+  }
+}
 
 function initialState(): SimState {
   const characters: Record<string, CharacterState> = {}
@@ -147,7 +194,47 @@ function initialState(): SimState {
       isThinking: false,
     }
   }
-  return { characters, problems: [], actionItems: [], currentTopic: null, time: 0, speed: 1 }
+  const persisted = loadPersisted()
+  return {
+    characters,
+    problems: [],
+    actionItems: persisted.actionItems ?? [],
+    coaching: persisted.coaching ?? [],
+    mood: persisted.mood ?? freshMood(),
+    currentTopic: null,
+    scenario: null,
+    time: 0,
+    speed: 1,
+  }
+}
+
+// Mood drift when someone speaks on a topic.
+function nudgeMood(mood: Record<string, Mood>, speakerId: string, topicId: string): Record<string, Mood> {
+  const next: Record<string, Mood> = {}
+  for (const id of Object.keys(mood)) {
+    const base = BASELINE_MOOD[id] ?? { tinhThan: 60, nangLuong: 60, apLuc: 50 }
+    const m = mood[id]
+    // gentle decay toward baseline
+    next[id] = {
+      tinhThan: clamp(m.tinhThan + (base.tinhThan - m.tinhThan) * 0.05),
+      nangLuong: clamp(m.nangLuong + (base.nangLuong - m.nangLuong) * 0.05),
+      apLuc: clamp(m.apLuc + (base.apLuc - m.apLuc) * 0.05),
+    }
+  }
+  const s = next[speakerId]
+  if (s) {
+    s.nangLuong = clamp(s.nangLuong + 4) // engaged by speaking
+    if (topicId === 'discipline' || topicId === 'listings') {
+      s.apLuc = clamp(s.apLuc + (['mai', 'tri', 'huy'].includes(speakerId) ? 6 : 2))
+    }
+    if (topicId === 'content' || topicId === 'target') {
+      s.tinhThan = clamp(s.tinhThan + (['thanhduy', 'khoa', 'huong'].includes(speakerId) ? 5 : 2))
+    }
+    if (topicId === 'pipeline' && ['duc', 'huy', 'tri', 'mai', 'khoa'].includes(speakerId)) {
+      s.apLuc = clamp(s.apLuc + 4) // pressure for those without sales
+    }
+  }
+  return next
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
@@ -158,20 +245,18 @@ export function useSimulation() {
   const stateRef = useRef<SimState>(initialState())
   const lastTickRef = useRef<number>(performance.now())
   const convHistoryRef = useRef<ConvEntry[]>([])
+  const scenarioRef = useRef<string | null>(null)
   const runIdRef = useRef(0)
 
-  const applyState = useCallback(
-    (mutator: (s: SimState) => void) => {
-      const prev = stateRef.current
-      const chars: Record<string, CharacterState> = {}
-      for (const id of Object.keys(prev.characters)) chars[id] = { ...prev.characters[id] }
-      const next: SimState = { ...prev, characters: chars }
-      mutator(next)
-      stateRef.current = next
-      setState({ ...next })
-    },
-    [],
-  )
+  const applyState = useCallback((mutator: (s: SimState) => void) => {
+    const prev = stateRef.current
+    const chars: Record<string, CharacterState> = {}
+    for (const id of Object.keys(prev.characters)) chars[id] = { ...prev.characters[id] }
+    const next: SimState = { ...prev, characters: chars }
+    mutator(next)
+    stateRef.current = next
+    setState({ ...next })
+  }, [])
 
   const faceTowardSpeaker = useCallback((s: SimState, speakerId: string) => {
     const sp = s.characters[speakerId].position
@@ -184,16 +269,27 @@ export function useSimulation() {
     }
   }, [])
 
-  // ── Agenda-driven, turn-based meeting loop ────────────────────────────────
+  // ── Persist deliverables ──
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.setItem(
+        STORE_KEY,
+        JSON.stringify({ actionItems: state.actionItems, coaching: state.coaching, mood: state.mood }),
+      )
+    } catch {
+      /* ignore quota */
+    }
+  }, [state.actionItems, state.coaching, state.mood])
+
+  // ── Agenda-driven meeting loop ────────────────────────────────────────────
   useEffect(() => {
     runIdRef.current += 1
     const myRun = runIdRef.current
     const alive = () => runIdRef.current === myRun
 
-    // One person thinks, then speaks; everyone else listens. Returns the line (or '').
     async function takeTurn(speakerId: string, topic: AgendaTopic, isOpener: boolean): Promise<string> {
       const persona = PERSONAS.find((p) => p.id === speakerId)!
-
       applyState((s) => {
         s.characters[speakerId].isThinking = true
         s.characters[speakerId].behavior = 'sitting'
@@ -203,9 +299,9 @@ export function useSimulation() {
 
       let text = ''
       try {
-        text = await speakOnTopic(speakerId, topic, convHistoryRef.current, isOpener)
+        text = await speakOnTopic(speakerId, topic, convHistoryRef.current, isOpener, scenarioRef.current)
       } catch (err) {
-        console.warn(`[${speakerId}] Ollama error:`, err)
+        console.warn(`[${speakerId}] error:`, err)
         applyState((s) => {
           s.characters[speakerId].isThinking = false
         })
@@ -224,7 +320,6 @@ export function useSimulation() {
         ...convHistoryRef.current.slice(-(CONVERSATION_HISTORY_LIMIT - 1)),
         { name: persona.name, text },
       ]
-
       const emoji = PERSONA_EMOJIS[speakerId] ?? '💬'
       const problem: Problem = {
         id: `${Date.now()}-${speakerId}`,
@@ -245,12 +340,12 @@ export function useSimulation() {
         s.characters[speakerId].speech = `${emoji} ${text}`
         s.characters[speakerId].facingAngle = Math.PI
         s.problems = [...s.problems.slice(-49), problem]
+        s.mood = nudgeMood(s.mood, speakerId, topic.id)
       })
 
       const readMs = Math.min(READING_TIME.max, Math.max(READING_TIME.min, text.length * READING_TIME.perChar))
       await sleep(readMs)
       if (!alive()) return ''
-
       applyState((s) => {
         s.characters[speakerId].speech = null
         s.characters[speakerId].behavior = 'sitting'
@@ -262,32 +357,32 @@ export function useSimulation() {
     async function meetingLoop() {
       await sleep(1500)
       let topicIdx = 0
-
       while (alive()) {
         const topic = AGENDA[topicIdx % AGENDA.length]
         topicIdx++
-
         applyState((s) => {
           s.currentTopic = { id: topic.id, title: topic.title }
         })
 
         const topicLines: ConvEntry[] = []
+        const memberLines: { id: string; name: string; text: string }[] = []
 
-        // 1) Leader opens the topic
         const opener = await takeTurn('duc', topic, true)
         if (!alive()) break
         if (opener) topicLines.push({ name: 'Trần Đăng Duy', text: opener })
 
-        // 2) Relevant members weigh in, in order
         for (const pid of topic.participants) {
           if (!alive()) break
           const persona = PERSONAS.find((p) => p.id === pid)
           const line = await takeTurn(pid, topic, false)
-          if (line && persona) topicLines.push({ name: persona.name, text: line })
+          if (line && persona) {
+            topicLines.push({ name: persona.name, text: line })
+            memberLines.push({ id: pid, name: persona.name, text: line })
+          }
         }
         if (!alive()) break
 
-        // 3) Secretary distills one concrete action item for Duy
+        // Action item
         try {
           const action = await distillActionItem(topic, topicLines)
           if (alive() && action) {
@@ -299,11 +394,29 @@ export function useSimulation() {
             })
           }
         } catch (err) {
-          console.warn('[secretary] error:', err)
+          console.warn('[secretary]', err)
         }
         if (!alive()) break
 
-        // 4) Every 3 topics, observer reflects action items → strategic insight
+        // Coaching cards (batched)
+        try {
+          const advices = await coachParticipants(topic, memberLines)
+          if (alive() && Object.keys(advices).length) {
+            applyState((s) => {
+              const map = new Map(s.coaching.map((c) => [c.personaId, c]))
+              for (const [pid, advice] of Object.entries(advices)) {
+                const persona = PERSONAS.find((p) => p.id === pid)!
+                map.set(pid, { id: `${pid}`, personaId: pid, name: persona.name, color: persona.color, advice })
+              }
+              s.coaching = [...map.values()]
+            })
+          }
+        } catch (err) {
+          console.warn('[coach]', err)
+        }
+        if (!alive()) break
+
+        // Reflection every 3 topics
         if (topicIdx % 3 === 0) {
           try {
             const recent = stateRef.current.actionItems
@@ -320,7 +433,7 @@ export function useSimulation() {
               })
             }
           } catch (err) {
-            console.warn('[observer] error:', err)
+            console.warn('[observer]', err)
           }
         }
 
@@ -342,12 +455,10 @@ export function useSimulation() {
       const rawDelta = (now - lastTickRef.current) / 1000
       lastTickRef.current = now
       const delta = Math.min(rawDelta, 0.1) * stateRef.current.speed
-
       const s = stateRef.current
       const newTime = s.time + delta
       const updatedChars = { ...s.characters }
       let anyChange = false
-
       for (const id of Object.keys(updatedChars)) {
         const ch = { ...updatedChars[id] }
         const dist = ch.position.distanceTo(ch.target)
@@ -359,7 +470,6 @@ export function useSimulation() {
         }
         updatedChars[id] = ch
       }
-
       const newState: SimState = { ...s, time: newTime, characters: anyChange ? updatedChars : s.characters }
       stateRef.current = newState
       setState(newState)
@@ -376,11 +486,106 @@ export function useSimulation() {
 
   const reset = useCallback(() => {
     convHistoryRef.current = []
-    const fresh = initialState()
+    scenarioRef.current = null
+    if (typeof window !== 'undefined') localStorage.removeItem(STORE_KEY)
+    const characters: Record<string, CharacterState> = {}
+    for (const p of PERSONAS) {
+      const desk = deskTarget(p.id)
+      characters[p.id] = {
+        persona: p, position: desk.clone(), target: desk.clone(), behavior: 'sitting',
+        speech: null, speechExpiry: 0, facingAngle: Math.PI, isThinking: false,
+      }
+    }
+    const fresh: SimState = {
+      characters, problems: [], actionItems: [], coaching: [], mood: freshMood(),
+      currentTopic: null, scenario: null, time: 0, speed: stateRef.current.speed,
+    }
     stateRef.current = fresh
     setState(fresh)
     setGeneration((g) => g + 1)
   }, [])
 
-  return { state, setSpeed, reset }
+  // ── Human-in-the-loop: leader (the real user) speaks to the team ──
+  const sendUtterance = useCallback((raw: string) => {
+    const text = raw.trim()
+    if (!text) return
+    convHistoryRef.current = [
+      ...convHistoryRef.current.slice(-(CONVERSATION_HISTORY_LIMIT - 1)),
+      { name: 'Trưởng nhóm Duy (bạn)', text },
+    ]
+    applyState((s) => {
+      s.problems = [
+        ...s.problems.slice(-49),
+        {
+          id: `${Date.now()}-you`,
+          timestamp: s.time,
+          who: '_user',
+          personaName: 'Bạn (Trưởng nhóm)',
+          role: '',
+          color: '#FFFFFF',
+          message: text,
+          severity: 'high',
+          emoji: '🎙️',
+        },
+      ]
+    })
+  }, [applyState])
+
+  // ── Scenario injection: drop a real-world situation into the meeting ──
+  const injectScenario = useCallback((raw: string) => {
+    const text = raw.trim()
+    if (!text) return
+    scenarioRef.current = text
+    applyState((s) => {
+      s.scenario = text
+      s.problems = [
+        ...s.problems.slice(-49),
+        {
+          id: `${Date.now()}-scn`,
+          timestamp: s.time,
+          who: '_scenario',
+          personaName: 'Tình huống',
+          role: '',
+          color: '#F59E0B',
+          message: text,
+          severity: 'high',
+          emoji: '⚡',
+        },
+      ]
+    })
+  }, [applyState])
+
+  const clearScenario = useCallback(() => {
+    scenarioRef.current = null
+    applyState((s) => {
+      s.scenario = null
+    })
+  }, [applyState])
+
+  // ── Export meeting minutes as Markdown ──
+  const exportMinutes = useCallback(() => {
+    if (typeof window === 'undefined') return
+    const s = stateRef.current
+    const date = new Date().toLocaleString('vi-VN')
+    const lines: string[] = []
+    lines.push(`# Biên bản họp nhóm Bom Tấn`)
+    lines.push(`_Sài Gòn King Land · ${date}_\n`)
+    lines.push(`## 🎙️ Hội thoại`)
+    for (const p of s.problems) lines.push(`- **${p.personaName}:** ${p.message}`)
+    lines.push(`\n## ✅ Việc cần làm cho Trưởng nhóm`)
+    s.actionItems.filter((a) => a.kind !== 'insight').forEach((a, i) => lines.push(`${i + 1}. (${a.topicTitle}) ${a.text}`))
+    lines.push(`\n## 🧠 Nhận định chiến lược`)
+    s.actionItems.filter((a) => a.kind === 'insight').forEach((a) => lines.push(`- ${a.text}`))
+    lines.push(`\n## 🎯 Gợi ý quản trị từng người`)
+    for (const c of s.coaching) lines.push(`- **${c.name}:** ${c.advice}`)
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `bien-ban-bom-tan-${Date.now()}.md`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [])
+
+  return { state, setSpeed, reset, sendUtterance, injectScenario, clearScenario, exportMinutes }
 }

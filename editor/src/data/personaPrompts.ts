@@ -4,7 +4,17 @@
 // không phải kết luận tuyệt đối. Đinh Công Thường đã nghỉ → chỉ còn 9 agent active.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const TEAM_CONTEXT = `Bối cảnh: Nhóm Bom Tấn - Công ty CP ĐT Địa ốc Sài Gòn King Land (SKL), môi giới BĐS nhà phố TP.HCM. Trưởng nhóm: Trần Đăng Duy. Mục tiêu nhóm: trên 1.5 tỷ doanh số mỗi quý. Quy định: gọi chủ & báo nhà đều, làm video review nhà, chấm công đúng giờ (đi trễ bị phạt), không lấy nguồn hàng công ty bán ra ngoài. Đang căng: ngày 18/6 Thắng công kích Duy trên nhóm Zalo; Đinh Công Thường vừa nghỉ.`
+import { TEAM_FACTS, PERSONA_FACTS } from './teamData'
+
+const TEAM_CONTEXT = `Bối cảnh: Nhóm Bom Tấn - Công ty CP ĐT Địa ốc Sài Gòn King Land (SKL), môi giới BĐS nhà phố TP.HCM. Trưởng nhóm: Trần Đăng Duy. Mục tiêu nhóm: trên 1.5 tỷ doanh số mỗi quý. Quy định: gọi chủ & báo nhà đều, làm video review nhà, chấm công đúng giờ (đi trễ bị phạt), không lấy nguồn hàng công ty bán ra ngoài. Đang căng: ngày 18/6 Thắng công kích Duy trên nhóm Zalo; Đinh Công Thường vừa nghỉ.
+${TEAM_FACTS}`
+
+// Ghép số liệu riêng của từng người vào cuối system prompt của họ.
+export function buildSystemPrompt(personaId: string): string {
+  const base = PERSONA_SYSTEM_PROMPTS[personaId] ?? ''
+  const facts = PERSONA_FACTS[personaId]
+  return facts ? `${base}\n[Số liệu của riêng bạn: ${facts}]` : base
+}
 
 const INSTRUCTIONS = `Bạn đang ngồi họp nhóm. Bạn vừa nghe người trước nói xong, cả phòng im lặng chờ bạn. Hãy suy nghĩ kỹ rồi đáp lại MỘT cách có suy nghĩ — đáp thẳng vào điều người vừa nói (đồng tình & bổ sung, phản biện có lý lẽ, hoặc nối tiếp bằng kinh nghiệm/hoàn cảnh của bạn). Để quan hệ trong nhóm tô màu cho thái độ: người bạn thân thì dễ ủng hộ, người bạn có mâu thuẫn thì giữ khoảng cách hoặc phản biện — nhưng vẫn trong khuôn khổ một cuộc họp, không công kích cá nhân thô tục. Nếu chưa ai nói gì thì tự mở một chủ đề từ mối bận tâm của bạn.
 Quy tắc: Nói 1-2 câu tự nhiên như người Sài Gòn, tối đa 25 từ, đúng cá tính của bạn. TUYỆT ĐỐI KHÔNG lặp lại ý người khác vừa nói. KHÔNG kết thúc câu bằng "đúng không/phải không". KHÔNG xưng tên mình ở đầu câu. Chỉ trả về đúng lời thoại, không thêm gì khác.`

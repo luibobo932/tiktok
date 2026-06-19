@@ -8,8 +8,8 @@ import { useSimulation } from '../hooks/useSimulation'
 import { PERSONAS } from '../data/simulation'
 
 export default function VirtualOffice() {
-  const { state, setSpeed, reset } = useSimulation()
-  const { characters, problems, actionItems, currentTopic, time, speed } = state
+  const { state, setSpeed, reset, sendUtterance, injectScenario, clearScenario, exportMinutes } = useSimulation()
+  const { characters, problems, actionItems, coaching, mood, currentTopic, scenario, time, speed } = state
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#0a0a14', position: 'relative' }}>
@@ -108,24 +108,50 @@ export default function VirtualOffice() {
           backdropFilter: 'blur(6px)',
         }}
       >
-        {PERSONAS.map((p) => (
-          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: p.color }} />
-            <span style={{ fontWeight: 600, color: p.color }}>{p.name}</span>
-            <span style={{ color: '#888' }}>— {p.role}</span>
-          </div>
-        ))}
+        <div style={{ fontSize: 9, color: '#777', marginBottom: 2, display: 'flex', gap: 8 }}>
+          <span>Nhân sự</span>
+          <span style={{ marginLeft: 'auto', color: '#34D399' }}>Tinh thần</span>
+          <span style={{ color: '#FBBF24' }}>N.lượng</span>
+          <span style={{ color: '#F87171' }}>Áp lực</span>
+        </div>
+        {PERSONAS.map((p) => {
+          const m = mood[p.id] ?? { tinhThan: 60, nangLuong: 60, apLuc: 50 }
+          const bar = (val: number, color: string) => (
+            <div style={{ width: 26, height: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ width: `${val}%`, height: '100%', background: color }} />
+            </div>
+          )
+          return (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 9, height: 9, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
+              <span style={{ fontWeight: 600, color: p.color, fontSize: 10, width: 96, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {p.name}
+              </span>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center' }}>
+                {bar(m.tinhThan, '#34D399')}
+                {bar(m.nangLuong, '#FBBF24')}
+                {bar(m.apLuc, '#F87171')}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {/* Problem log panel */}
       <ProblemLog
         problems={problems}
         actionItems={actionItems}
+        coaching={coaching}
         currentTopic={currentTopic}
+        scenario={scenario}
         time={time}
         speed={speed}
         onSpeedChange={setSpeed}
         onReset={reset}
+        onSend={sendUtterance}
+        onScenario={injectScenario}
+        onClearScenario={clearScenario}
+        onExport={exportMinutes}
       />
     </div>
   )

@@ -71,3 +71,6 @@ export const OBSERVER_PROMPT = `Bạn là cố vấn quản trị quan sát cu�
 Ví dụ tốt: "Rủi ro: ba việc đều xoay quanh nhân viên giấu thông tin với sếp — đây là vấn đề văn hóa báo cáo, không phải kỹ năng."
 Ví dụ XẤU (cấm tuyệt đối): "Phải làm ngay các việc để duy trì tiến độ", "Cần quyết tâm hơn" — loại câu chung chung vô giá trị.
 Viết ĐÚNG 1 câu sắc bén, cụ thể (tối đa 28 từ), bắt đầu bằng "Quy luật:", "Rủi ro:" hoặc "Cơ hội:". Chỉ trả về đúng câu nhận định.`
+
+// Cố vấn coaching — với mỗi người vừa phát biểu, gợi 1 nước đi quản trị cho Duy.
+export const COACH_PROMPT = `Bạn là cố vấn quản trị cho trưởng nhóm Bom Tấn (Trần Đăng Duy). Với MỖI nhân viên vừa phát biểu, hãy cho Duy đúng 1 NƯỚC ĐI mà chính Duy nên làm với người đó (giao việc, kèm cặp, giao deadline, khen đúng lúc, nhắc nhở bằng quy chế...). Câu lệnh ngắn, bắt đầu bằng động từ, tối đa 16 từ, hợp tính cách người đó. CẤM lời động viên chung chung kiểu "tiếp tục cố gắng". Trả về mỗi người MỘT dòng đúng định dạng "Tên: nước đi", không thêm gì khác.`
