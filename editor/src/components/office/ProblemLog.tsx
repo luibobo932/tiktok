@@ -1,15 +1,10 @@
 import { useEffect, useRef } from 'react'
-import { Problem, SCRIPT_DURATION } from '../../data/simulation'
+import { Problem } from '../../data/simulation'
 
 const SEV_COLOR: Record<string, string> = {
   high: '#EF4444',
   medium: '#F97316',
   low: '#22C55E',
-}
-const SEV_LABEL: Record<string, string> = {
-  high: 'Gấp',
-  medium: 'Cần thiết',
-  low: 'Nice-to-have',
 }
 
 interface Props {
@@ -29,8 +24,9 @@ export default function ProblemLog({ problems, time, speed, onSpeedChange, onRes
     }
   }, [problems.length])
 
-  const highCount = problems.filter((p) => p.severity === 'high').length
-  const uniqueFeatures = [...new Set(problems.map((p) => p.featureRequest))].length
+  const minutes = Math.floor(time / 60)
+  const seconds = Math.floor(time % 60)
+  const timeLabel = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 
   return (
     <div
@@ -51,19 +47,19 @@ export default function ProblemLog({ problems, time, speed, onSpeedChange, onRes
     >
       {/* Header */}
       <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#FE2C55', marginBottom: 4 }}>
-          📋 Họp nhóm Bom Tấn — Quy định & Trọng tâm
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#FE2C55', marginBottom: 6 }}>
+          🤖 Nhóm Bom Tấn — AI Live
         </div>
-        <div style={{ display: 'flex', gap: 10, fontSize: 11 }}>
-          <span style={{ background: '#EF444430', color: '#EF4444', borderRadius: 4, padding: '2px 7px' }}>
-            🔴 {highCount} quy định bắt buộc
+        <div style={{ display: 'flex', gap: 8, fontSize: 11, alignItems: 'center' }}>
+          <span style={{ background: '#6366F130', color: '#A5B4FC', borderRadius: 4, padding: '2px 7px' }}>
+            ⏱ {timeLabel}
           </span>
-          <span style={{ background: '#3B82F630', color: '#93C5FD', borderRadius: 4, padding: '2px 7px' }}>
-            📑 {uniqueFeatures} điều khoản
+          <span style={{ background: '#10B98130', color: '#6EE7B7', borderRadius: 4, padding: '2px 7px' }}>
+            💬 {problems.length} tin nhắn
           </span>
         </div>
 
-        {/* Controls */}
+        {/* Speed controls */}
         <div style={{ marginTop: 10, display: 'flex', gap: 6, alignItems: 'center' }}>
           <span style={{ fontSize: 10, color: '#888' }}>Tốc độ:</span>
           {[1, 2, 4].map((s) => (
@@ -100,26 +96,23 @@ export default function ProblemLog({ problems, time, speed, onSpeedChange, onRes
             ↺ Reset
           </button>
         </div>
-
-        {/* Time bar */}
-        <div style={{ marginTop: 8, height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
-          <div
-            style={{
-              height: '100%',
-              width: `${((time % SCRIPT_DURATION) / SCRIPT_DURATION) * 100}%`,
-              background: '#FE2C55',
-              borderRadius: 2,
-              transition: 'width 0.1s linear',
-            }}
-          />
-        </div>
       </div>
 
-      {/* Problem feed */}
-      <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Chat log */}
+      <div
+        ref={listRef}
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '8px 12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+        }}
+      >
         {problems.length === 0 && (
           <div style={{ color: '#555', fontSize: 12, textAlign: 'center', marginTop: 40 }}>
-            Đang bắt đầu phổ biến quy định...
+            Các nhân vật đang khởi động...
           </div>
         )}
         {problems.map((p) => (
@@ -127,13 +120,13 @@ export default function ProblemLog({ problems, time, speed, onSpeedChange, onRes
             key={p.id}
             style={{
               background: 'rgba(255,255,255,0.05)',
-              border: `1px solid ${SEV_COLOR[p.severity]}40`,
-              borderLeft: `3px solid ${SEV_COLOR[p.severity]}`,
+              border: `1px solid ${SEV_COLOR[p.severity]}30`,
+              borderLeft: `3px solid ${p.color}`,
               borderRadius: 8,
               padding: '9px 11px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
               <div
                 style={{
                   width: 8,
@@ -144,64 +137,35 @@ export default function ProblemLog({ problems, time, speed, onSpeedChange, onRes
                 }}
               />
               <span style={{ fontSize: 11, fontWeight: 700, color: p.color }}>{p.personaName}</span>
-              <span style={{ fontSize: 10, color: '#666', marginLeft: 'auto' }}>
-                {Math.floor(p.timestamp)}s
+              <span style={{ fontSize: 10, color: '#555', marginLeft: 'auto' }}>
+                {p.emoji}
               </span>
             </div>
-            <div style={{ fontSize: 12, color: '#ddd', marginBottom: 6, lineHeight: 1.4 }}>
-              {p.emoji} {p.message}
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 4,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 10,
-                  background: '#1E3A5F',
-                  color: '#93C5FD',
-                  borderRadius: 4,
-                  padding: '2px 6px',
-                  flex: 1,
-                }}
-              >
-                💡 {p.featureRequest}
-              </span>
-              <span
-                style={{
-                  fontSize: 9,
-                  background: `${SEV_COLOR[p.severity]}20`,
-                  color: SEV_COLOR[p.severity],
-                  borderRadius: 4,
-                  padding: '2px 5px',
-                  flexShrink: 0,
-                }}
-              >
-                {SEV_LABEL[p.severity]}
-              </span>
+            <div style={{ fontSize: 12, color: '#ddd', lineHeight: 1.5 }}>
+              {p.message}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Summary footer */}
+      {/* Footer — recent speakers */}
       {problems.length > 0 && (
-        <div style={{ padding: '10px 14px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: 11, color: '#888' }}>
-          Quy định bắt buộc:
-          {[...new Set(
-            problems
-              .filter((p) => p.severity === 'high')
-              .map((p) => p.featureRequest),
-          )]
-            .slice(0, 3)
-            .map((f, i) => (
-              <div key={i} style={{ color: '#EF4444', marginTop: 3 }}>
-                {i + 1}. {f}
-              </div>
+        <div
+          style={{
+            padding: '10px 14px',
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            fontSize: 10,
+            color: '#666',
+          }}
+        >
+          Vừa nói:{' '}
+          {[...new Map(
+            [...problems].reverse().slice(0, 4).map((p) => [p.who, p]),
+          ).values()]
+            .map((p) => (
+              <span key={p.who} style={{ color: p.color, marginRight: 6 }}>
+                {p.personaName.split(' ').pop()}
+              </span>
             ))}
         </div>
       )}

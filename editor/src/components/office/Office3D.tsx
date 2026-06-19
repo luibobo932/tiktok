@@ -126,7 +126,7 @@ function CoffeeStation() {
 }
 
 // ── Problem Board on wall ───────────────────────────────────────────────────
-export function ProblemBoard({ problems }: { problems: { id: string; emoji: string; featureRequest: string; severity: string }[] }) {
+export function ProblemBoard({ problems }: { problems: { id: string; emoji: string; message: string; severity: string; personaName: string }[] }) {
   const recent = problems.slice(-6)
   return (
     <group position={[9.9, 2.5, 0]} rotation={[0, -Math.PI / 2, 0]}>
@@ -136,18 +136,18 @@ export function ProblemBoard({ problems }: { problems: { id: string; emoji: stri
         <meshLambertMaterial color="#ECEFF1" />
       </mesh>
       <Text position={[0, 1.3, 0.05]} fontSize={0.22} color="#C62828" anchorX="center" fontWeight="bold">
-        📌 Feedback Board
+        NHAT KY CUOC HOP
       </Text>
       {recent.map((p, i) => (
         <Text
           key={p.id}
           position={[0, 0.9 - i * 0.42, 0.05]}
-          fontSize={0.16}
+          fontSize={0.14}
           color={p.severity === 'high' ? '#C62828' : p.severity === 'medium' ? '#E65100' : '#2E7D32'}
           anchorX="center"
           maxWidth={4}
         >
-          {`${p.emoji} ${p.featureRequest}`}
+          {`${p.emoji} ${p.message.slice(0, 35)}${p.message.length > 35 ? '...' : ''}`}
         </Text>
       ))}
     </group>
@@ -155,7 +155,7 @@ export function ProblemBoard({ problems }: { problems: { id: string; emoji: stri
 }
 
 // ── Main Office Scene ────────────────────────────────────────────────────────
-export default function Office3D({ problems }: { problems: { id: string; emoji: string; featureRequest: string; severity: string }[] }) {
+export default function Office3D({ problems }: { problems: { id: string; emoji: string; message: string; severity: string; personaName: string }[] }) {
   return (
     <group>
       {/* ── Floor ── */}
