@@ -1,11 +1,237 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TikTok Auto Reply Bot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f9f9f9;
+      color: #1a1a2e;
+      line-height: 1.6;
+    }
+    header {
+      background: linear-gradient(135deg, #010101 0%, #2d2d2d 100%);
+      color: #fff;
+      padding: 60px 20px;
+      text-align: center;
+    }
+    header img {
+      width: 72px;
+      margin-bottom: 16px;
+    }
+    header h1 {
+      font-size: 2.4rem;
+      margin-bottom: 10px;
+    }
+    header p {
+      font-size: 1.15rem;
+      color: #ccc;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+    nav {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 14px 20px;
+      text-align: center;
+    }
+    nav a {
+      margin: 0 16px;
+      color: #fe2c55;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    nav a:hover { text-decoration: underline; }
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 20px;
+    }
+    .section-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #010101;
+    }
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      margin-bottom: 56px;
+    }
+    @media (max-width: 600px) { .about-grid { grid-template-columns: 1fr; } }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: #fe2c55;
+    }
+    .card p { color: #444; font-size: 0.95rem; }
+    .badge {
+      display: inline-block;
+      background: #fe2c55;
+      color: #fff;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .desc-box {
+      background: #fff;
+      border-left: 4px solid #fe2c55;
+      padding: 28px 32px;
+      border-radius: 0 12px 12px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      margin-bottom: 56px;
+    }
+    .desc-box p { color: #333; margin-bottom: 10px; }
+    .permissions-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 56px;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .permissions-table th {
+      background: #010101;
+      color: #fff;
+      padding: 14px 20px;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    .permissions-table td {
+      padding: 13px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.92rem;
+      color: #333;
+    }
+    .permissions-table tr:last-child td { border-bottom: none; }
+    footer {
+      background: #010101;
+      color: #888;
+      text-align: center;
+      padding: 28px 20px;
+      font-size: 0.88rem;
+    }
+    footer a { color: #fe2c55; text-decoration: none; }
+  </style>
 </head>
 <body>
-  <h1>Xin chào từ bot TikTok Auto Reply!</h1>
-  <p>Trang này được tạo để xác minh domain với TikTok Developer.</p>
+
+<header>
+  <h1>TikTok Auto Reply Bot</h1>
+  <p>An automated messaging assistant that helps creators and businesses respond to TikTok comments efficiently and at scale.</p>
+</header>
+
+<nav>
+  <a href="/">Home</a>
+  <a href="/privacy.html">Privacy Policy</a>
+  <a href="/terms.html">Terms of Service</a>
+</nav>
+
+<div class="container">
+
+  <!-- App Description -->
+  <p class="section-title">About This Application</p>
+  <div class="desc-box">
+    <p><strong>TikTok Auto Reply Bot</strong> is a third-party application built on the TikTok for Developers API that enables creators, small businesses, and brands to automate replies to comments on their TikTok videos.</p>
+    <p>The bot is triggered by predefined keywords or conditions in incoming comments. When a match is detected, it posts a customized, pre-approved reply on behalf of the authorized TikTok account. This allows account owners to maintain continuous engagement with their audience without monitoring every comment manually.</p>
+    <p>All automated actions are performed exclusively under the explicit authorization of the TikTok account owner, using OAuth 2.0 access tokens obtained through TikTok's official login flow. No data is shared with any third party.</p>
+  </div>
+
+  <!-- Feature cards -->
+  <p class="section-title">Key Features</p>
+  <div class="about-grid">
+    <div class="card">
+      <h3>Keyword-Triggered Replies</h3>
+      <p>Define keyword rules and the bot automatically replies to matching comments with a customized message.</p>
+    </div>
+    <div class="card">
+      <h3>Secure OAuth 2.0 Login</h3>
+      <p>Access is granted only via TikTok's official OAuth flow. No passwords are stored; tokens are encrypted at rest.</p>
+    </div>
+    <div class="card">
+      <h3>Rate-Limit Compliant</h3>
+      <p>The bot strictly follows TikTok API rate limits and platform policies to ensure account safety.</p>
+    </div>
+    <div class="card">
+      <h3>Minimal Data Retention</h3>
+      <p>Only the data required to deliver automated replies is temporarily processed. No personal data is permanently stored.</p>
+    </div>
+  </div>
+
+  <!-- Permissions -->
+  <p class="section-title">API Scopes &amp; Justification</p>
+  <table class="permissions-table">
+    <thead>
+      <tr>
+        <th>Scope / Permission</th>
+        <th>Why It Is Required</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>comment.list</code></td>
+        <td>Fetch comments on the authorized user's videos to evaluate keyword-trigger rules.</td>
+      </tr>
+      <tr>
+        <td><code>comment.create</code></td>
+        <td>Post automated replies to matching comments on behalf of the authorized account.</td>
+      </tr>
+      <tr>
+        <td><code>user.info.basic</code></td>
+        <td>Display the connected account's display name and avatar in the app dashboard for identification purposes.</td>
+      </tr>
+      <tr>
+        <td><code>video.list</code></td>
+        <td>Enumerate the user's videos so that comment monitoring can be scoped to specific videos or all videos.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Use Cases -->
+  <p class="section-title">Use Cases</p>
+  <div class="about-grid">
+    <div class="card">
+      <span class="badge">E-Commerce</span>
+      <h3>Instant Product Information</h3>
+      <p>Automatically reply with product links or pricing when a viewer comments "price" or "where to buy".</p>
+    </div>
+    <div class="card">
+      <span class="badge">Creator</span>
+      <h3>Community Engagement</h3>
+      <p>Keep audiences engaged by instantly thanking commenters, sharing resource links, or directing them to a pinned video.</p>
+    </div>
+    <div class="card">
+      <span class="badge">Business</span>
+      <h3>Lead Generation</h3>
+      <p>Reply with a call-to-action link when users express interest in services, driving traffic to external landing pages.</p>
+    </div>
+    <div class="card">
+      <span class="badge">Support</span>
+      <h3>FAQ Automation</h3>
+      <p>Answer frequently asked questions instantly, reducing manual workload for community managers.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>&copy; 2024 TikTok Auto Reply Bot &nbsp;|&nbsp; <a href="/privacy.html">Privacy Policy</a> &nbsp;|&nbsp; <a href="/terms.html">Terms of Service</a></p>
+  <p style="margin-top:8px;">Contact: <a href="mailto:duy@tiktokbot.app">duy@tiktokbot.app</a></p>
+</footer>
+
 </body>
 </html>
