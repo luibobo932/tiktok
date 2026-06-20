@@ -5,6 +5,8 @@ import { buildSystemPrompt, PERSONA_EMOJIS, PERSONA_SEVERITY } from '../data/per
 import { AGENDA, SECRETARY_PROMPT, OBSERVER_PROMPT, COACH_PROMPT, AgendaTopic } from '../data/meetingAgenda'
 import { BASELINE_MOOD, Mood } from '../data/teamData'
 import { offlineSpeak, offlineActionItem, offlineInsight, offlineCoach } from '../data/offlineBrain'
+import Anthropic from '@anthropic-ai/sdk'
+import { getLLMConfig } from '../config/llm'
 import {
   OLLAMA_URL,
   OLLAMA_MODEL,
@@ -59,7 +61,38 @@ export function isOllamaDown() {
   return ollamaDown
 }
 
+// Cache 1 Anthropic client theo key để không tạo lại mỗi lượt.
+let _anthropic: { key: string; client: Anthropic } | null = null
+function anthropicClient(key: string): Anthropic {
+  if (!_anthropic || _anthropic.key !== key) {
+    _anthropic = { key, client: new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }) }
+  }
+  return _anthropic.client
+}
+
+// Tên giữ nguyên 'ollamaChat' để các call site không đổi, nhưng giờ dispatch theo
+// provider: Claude (Anthropic API) hoặc Ollama (local). Lỗi → caller fallback offline.
 async function ollamaChat(system: string, user: string, opts: Record<string, unknown> = {}): Promise<string> {
+  const cfg = getLLMConfig()
+
+  // ── Claude (Anthropic API) ──
+  if (cfg.provider === 'claude') {
+    if (!cfg.claudeApiKey) throw new Error('NO_CLAUDE_KEY')
+    const client = anthropicClient(cfg.claudeApiKey)
+    const maxTokens = (opts.num_predict as number) ?? 160
+    // Opus 4.8 / Sonnet 4.6 không nhận temperature — chỉ gửi model/system/messages.
+    const msg = await client.messages.create({
+      model: cfg.claudeModel,
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: 'user', content: user }],
+    })
+    const block = msg.content.find((b) => b.type === 'text')
+    const out = block && block.type === 'text' ? block.text : ''
+    return out.replace(/^["'"']+|["'"']+$/g, '').trim()
+  }
+
+  // ── Ollama (local qwen3) ──
   if (ollamaDown) throw new Error('ollama-offline')
   let res: Response
   try {

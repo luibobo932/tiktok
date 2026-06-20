@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Problem, ActionItem } from '../../data/simulation'
+import { getLLMConfig, setLLMConfig, CLAUDE_MODELS, Provider } from '../../config/llm'
 
 interface Coaching {
   id: string
@@ -44,6 +45,13 @@ export default function ProblemLog({
   const [tab, setTab] = useState<'outcomes' | 'coaching'>('outcomes')
   const [mode, setMode] = useState<'say' | 'scenario'>('say')
   const [draft, setDraft] = useState('')
+  const [showSettings, setShowSettings] = useState(false)
+  const [cfg, setCfg] = useState(getLLMConfig())
+  const saveCfg = (next: Partial<typeof cfg>) => {
+    const merged = { ...cfg, ...next }
+    setCfg(merged)
+    setLLMConfig(merged)
+  }
 
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
@@ -80,13 +88,28 @@ export default function ProblemLog({
     >
       {/* Header */}
       <div style={{ padding: '12px 14px 9px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 7 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#FE2C55' }}>🤖 Họp phát triển nhóm Bom Tấn</div>
+          <button
+            onClick={() => setShowSettings((v) => !v)}
+            title="Bộ não AI (Ollama / Claude)"
+            style={{
+              marginLeft: 'auto',
+              background: cfg.provider === 'claude' ? '#6366F1' : 'rgba(255,255,255,0.1)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 5,
+              padding: '3px 8px',
+              fontSize: 10,
+              cursor: 'pointer',
+            }}
+          >
+            🧠 {cfg.provider === 'claude' ? 'Claude' : 'Ollama'}
+          </button>
           <button
             onClick={onExport}
             title="Tải biên bản (.md)"
             style={{
-              marginLeft: 'auto',
               background: 'rgba(255,255,255,0.1)',
               color: '#ddd',
               border: 'none',
@@ -99,6 +122,84 @@ export default function ProblemLog({
             ⬇ Biên bản
           </button>
         </div>
+
+        {/* Settings: chọn bộ não AI */}
+        {showSettings && (
+          <div style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.35)', borderRadius: 8, padding: '9px 11px', marginBottom: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#C4B5FD', marginBottom: 6 }}>🧠 Bộ não AI</div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+              {(['ollama', 'claude'] as Provider[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => saveCfg({ provider: p })}
+                  style={{
+                    flex: 1,
+                    background: cfg.provider === p ? '#6366F1' : 'rgba(255,255,255,0.08)',
+                    color: cfg.provider === p ? '#fff' : '#aaa',
+                    border: 'none',
+                    borderRadius: 5,
+                    padding: '5px 0',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {p === 'ollama' ? 'Ollama (local)' : 'Claude (API)'}
+                </button>
+              ))}
+            </div>
+            {cfg.provider === 'claude' && (
+              <>
+                <input
+                  type="password"
+                  value={cfg.claudeApiKey}
+                  onChange={(e) => saveCfg({ claudeApiKey: e.target.value })}
+                  placeholder="Dán Anthropic API key (sk-ant-...)"
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: 6,
+                    padding: '6px 9px',
+                    color: 'white',
+                    fontSize: 11,
+                    outline: 'none',
+                    marginBottom: 6,
+                  }}
+                />
+                <select
+                  value={cfg.claudeModel}
+                  onChange={(e) => saveCfg({ claudeModel: e.target.value })}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: 6,
+                    padding: '6px 9px',
+                    color: 'white',
+                    fontSize: 11,
+                    outline: 'none',
+                  }}
+                >
+                  {CLAUDE_MODELS.map((m) => (
+                    <option key={m.id} value={m.id} style={{ background: '#1a1a2e' }}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ fontSize: 9, color: '#8b8bb0', marginTop: 6, lineHeight: 1.4 }}>
+                  Key lấy ở console.anthropic.com → lưu trong máy bạn. Mỗi lượt tốn token (Haiku rẻ nhất). Áp dụng từ lượt kế tiếp.
+                </div>
+              </>
+            )}
+            {cfg.provider === 'ollama' && (
+              <div style={{ fontSize: 9, color: '#8b8bb0', lineHeight: 1.4 }}>
+                Dùng qwen3:8b local (cần Ollama ở localhost:11434). Nếu không có, tự chuyển sang bộ não offline.
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Topic banner */}
         <div style={{ background: 'linear-gradient(90deg,#6366F1,#8B5CF6)', borderRadius: 8, padding: '7px 11px' }}>
