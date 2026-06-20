@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Problem, ActionItem } from '../../data/simulation'
-import { getLLMConfig, setLLMConfig, CLAUDE_MODELS, Provider } from '../../config/llm'
+import { getLLMConfig, setLLMConfig, CLAUDE_MODELS, GEMINI_MODELS, Provider } from '../../config/llm'
 
 interface Coaching {
   id: string
@@ -127,8 +127,12 @@ export default function ProblemLog({
         {showSettings && (
           <div style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.35)', borderRadius: 8, padding: '9px 11px', marginBottom: 8 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#C4B5FD', marginBottom: 6 }}>🧠 Bộ não AI</div>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-              {(['ollama', 'claude'] as Provider[]).map((p) => (
+            <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
+              {([
+                ['gemini', 'Gemini (free)'],
+                ['claude', 'Claude (API)'],
+                ['ollama', 'Ollama'],
+              ] as [Provider, string][]).map(([p, label]) => (
                 <button
                   key={p}
                   onClick={() => saveCfg({ provider: p })}
@@ -139,15 +143,60 @@ export default function ProblemLog({
                     border: 'none',
                     borderRadius: 5,
                     padding: '5px 0',
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: 700,
                     cursor: 'pointer',
                   }}
                 >
-                  {p === 'ollama' ? 'Ollama (local)' : 'Claude (API)'}
+                  {label}
                 </button>
               ))}
             </div>
+            {cfg.provider === 'gemini' && (
+              <>
+                <input
+                  type="password"
+                  value={cfg.geminiApiKey}
+                  onChange={(e) => saveCfg({ geminiApiKey: e.target.value })}
+                  placeholder="Dán Gemini API key (AIza...)"
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: 6,
+                    padding: '6px 9px',
+                    color: 'white',
+                    fontSize: 11,
+                    outline: 'none',
+                    marginBottom: 6,
+                  }}
+                />
+                <select
+                  value={cfg.geminiModel}
+                  onChange={(e) => saveCfg({ geminiModel: e.target.value })}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: 6,
+                    padding: '6px 9px',
+                    color: 'white',
+                    fontSize: 11,
+                    outline: 'none',
+                  }}
+                >
+                  {GEMINI_MODELS.map((m) => (
+                    <option key={m.id} value={m.id} style={{ background: '#1a1a2e' }}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ fontSize: 9, color: '#8b8bb0', marginTop: 6, lineHeight: 1.4 }}>
+                  Free key ở aistudio.google.com → "Get API key" (không cần thẻ). Free ~15 lượt/phút; nếu quá nhanh giảm tốc độ 1x.
+                </div>
+              </>
+            )}
             {cfg.provider === 'claude' && (
               <>
                 <input

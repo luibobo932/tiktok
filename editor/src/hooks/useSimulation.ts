@@ -92,6 +92,27 @@ async function ollamaChat(system: string, user: string, opts: Record<string, unk
     return out.replace(/^["'"']+|["'"']+$/g, '').trim()
   }
 
+  // ── Gemini (Google AI Studio — free tier) ──
+  if (cfg.provider === 'gemini') {
+    if (!cfg.geminiApiKey) throw new Error('NO_GEMINI_KEY')
+    const maxTokens = (opts.num_predict as number) ?? 160
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${cfg.geminiModel}:generateContent?key=${encodeURIComponent(cfg.geminiApiKey)}`
+    const gres = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: user }] }],
+        generationConfig: { maxOutputTokens: maxTokens, temperature: 0.9 },
+      }),
+    })
+    if (!gres.ok) throw new Error(`Gemini ${gres.status}`)
+    const gdata = await gres.json()
+    const parts: { text?: string }[] = gdata?.candidates?.[0]?.content?.parts ?? []
+    const out = parts.map((p) => p.text ?? '').join('')
+    return out.replace(/^["'"']+|["'"']+$/g, '').trim()
+  }
+
   // ── Ollama (local qwen3) ──
   if (ollamaDown) throw new Error('ollama-offline')
   let res: Response
