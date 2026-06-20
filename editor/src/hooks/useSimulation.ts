@@ -4,6 +4,7 @@ import { PERSONAS, WAYPOINTS, Problem, ActionItem, PersonaData } from '../data/s
 import { buildSystemPrompt, PERSONA_EMOJIS, PERSONA_SEVERITY } from '../data/personaPrompts'
 import { AGENDA, SECRETARY_PROMPT, OBSERVER_PROMPT, COACH_PROMPT, AgendaTopic } from '../data/meetingAgenda'
 import { BASELINE_MOOD, Mood } from '../data/teamData'
+import { offlineSpeak, offlineActionItem, offlineInsight, offlineCoach } from '../data/offlineBrain'
 import {
   OLLAMA_URL,
   OLLAMA_MODEL,
@@ -50,22 +51,36 @@ const CALL_NAME: Record<string, string> = {
 }
 
 // ── Ollama ────────────────────────────────────────────────────────────────────
+// Khi không có Ollama (vd: bản deploy trên Vercel — trình duyệt không tới được
+// localhost:11434), ta chuyển hẳn sang BỘ NÃO OFFLINE để cuộc họp vẫn sống.
+// Sau lần kết nối hỏng đầu tiên, đặt cờ ollamaDown để khỏi chờ fetch mỗi lượt.
+let ollamaDown = false
+export function isOllamaDown() {
+  return ollamaDown
+}
 
 async function ollamaChat(system: string, user: string, opts: Record<string, unknown> = {}): Promise<string> {
-  const res = await fetch(OLLAMA_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: OLLAMA_MODEL,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-      stream: false,
-      think: false,
-      options: { ...OLLAMA_OPTIONS, ...opts },
-    }),
-  })
+  if (ollamaDown) throw new Error('ollama-offline')
+  let res: Response
+  try {
+    res = await fetch(OLLAMA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+        stream: false,
+        think: false,
+        options: { ...OLLAMA_OPTIONS, ...opts },
+      }),
+    })
+  } catch (err) {
+    ollamaDown = true // không kết nối được → khoá lại, dùng offline từ giờ
+    throw err
+  }
   if (!res.ok) throw new Error(`Ollama ${res.status}`)
   const data = await res.json()
   let text: string = data.message?.content ?? ''
@@ -114,7 +129,11 @@ async function speakOnTopic(
     ? `\n[Lần trước chủ đề này nhóm đã chốt: "${priorDecision}". ĐỪNG mở lại từ đầu — hãy hỏi tiến độ việc đó hoặc đẩy sâu thêm một góc mới.]`
     : ''
 
-  const user = leaderMsg
+  const user = leaderMsg && personaId === 'duc'
+    ? `[Cuộc họp nhóm Bom Tấn. Người điều hành vừa đưa cho bạn — TRƯỞNG NHÓM Trần Đăng Duy — một chỉ đạo/câu hỏi:]
+"${leaderMsg}"
+${scenarioLine}${historyText}Bạn là Trần Đăng Duy, hãy LÊN TIẾNG với cả nhóm dựa trên chỉ đạo đó: tiếp nhận, diễn đạt lại bằng giọng trưởng nhóm và giao việc/hỏi anh em một câu cụ thể. Nói thẳng, dứt khoát, không xưng tên ở đầu câu.`
+    : leaderMsg
     ? `[Cuộc họp nhóm Bom Tấn. Trưởng nhóm Duy vừa nói TRỰC TIẾP với cả nhóm:]
 "${leaderMsg}"
 ${scenarioLine}${historyText}Bạn (${persona.name}) đáp lại trưởng nhóm thế nào? Phản ứng thật đúng cá tính, năng lực và hoàn cảnh của bạn — có thể đồng tình, phản biện, xin làm rõ, hoặc cam kết. Đáp THẲNG vào điều Duy vừa nói, không lảng sang chuyện khác.`
@@ -128,7 +147,14 @@ ${historyText}Duy mở đầu chủ đề này thế nào? Nêu vấn đề bằ
 Trọng tâm: ${topic.focus}${scenarioLine}
 ${historyText}Cả phòng đang chờ ${persona.name} góp ý ĐÚNG vào chủ đề này (không lạc đề). ${persona.name} nói gì?`
 
-  let text = await ollamaChat(system, user)
+  let text: string
+  try {
+    text = await ollamaChat(system, user)
+  } catch {
+    // Không có Ollama → dùng bộ não offline (chạy ngay trong trình duyệt).
+    await sleep(randomBetween(500, 1100)) // giả lập "đang nghĩ" cho tự nhiên
+    return offlineSpeak({ personaId, topic, isOpener, leaderMsg })
+  }
   const lastWord = persona.name.split(' ').pop() ?? ''
   // Salvage: if the model narrated tone then quoted the real line ("Thắng gắt giọng... nói: \"...\""),
   // keep only the quoted speech.
@@ -173,8 +199,12 @@ async function distillActionItem(topic: AgendaTopic, topicLines: ConvEntry[]): P
   const user = `Chủ đề: "${topic.title}".\nTrao đổi của nhóm:\n${topicLines
     .map((l) => `- ${l.name}: ${l.text}`)
     .join('\n')}\n\nViệc cần làm cho trưởng nhóm Duy là gì?`
-  let text = await ollamaChat(SECRETARY_PROMPT, user, { temperature: 0.5, num_predict: 70 })
-  return text.replace(/^[-•\d.\s]+/, '').replace(/^["'"']+|["'"']+$/g, '').trim()
+  try {
+    const text = await ollamaChat(SECRETARY_PROMPT, user, { temperature: 0.5, num_predict: 70 })
+    return text.replace(/^[-•\d.\s]+/, '').replace(/^["'"']+|["'"']+$/g, '').trim()
+  } catch {
+    return offlineActionItem(topic)
+  }
 }
 
 async function distillInsight(recentActions: string[]): Promise<string> {
@@ -182,8 +212,12 @@ async function distillInsight(recentActions: string[]): Promise<string> {
   const user = `Các việc cần làm vừa rút ra từ cuộc họp:\n${recentActions
     .map((a, i) => `${i + 1}. ${a}`)
     .join('\n')}\n\nNhận định chiến lược tầm cao cho trưởng nhóm Duy là gì?`
-  let text = await ollamaChat(OBSERVER_PROMPT, user, { temperature: 0.6, num_predict: 90 })
-  return text.replace(/^[-•\d.\s]+/, '').replace(/^["'"']+|["'"']+$/g, '').trim()
+  try {
+    const text = await ollamaChat(OBSERVER_PROMPT, user, { temperature: 0.6, num_predict: 90 })
+    return text.replace(/^[-•\d.\s]+/, '').replace(/^["'"']+|["'"']+$/g, '').trim()
+  } catch {
+    return offlineInsight()
+  }
 }
 
 // Batched coaching: 1 call → 1 advice line per participant who spoke.
@@ -195,7 +229,12 @@ async function coachParticipants(
   const user = `Chủ đề: "${topic.title}".\nCác nhân viên vừa phát biểu:\n${memberLines
     .map((l) => `${CALL_NAME[l.id] ?? l.name}: "${l.text}"`)
     .join('\n')}\n\nVới mỗi người, cho Duy 1 nước đi quản trị (đúng định dạng "Tên: lời khuyên").`
-  const text = await ollamaChat(COACH_PROMPT, user, { temperature: 0.6, num_predict: 200 })
+  let text: string
+  try {
+    text = await ollamaChat(COACH_PROMPT, user, { temperature: 0.6, num_predict: 200 })
+  } catch {
+    return offlineCoach(memberLines)
+  }
   const out: Record<string, string> = {}
   for (const raw of text.split('\n')) {
     const line = raw.replace(/^[-•\d.\s]+/, '').trim()
@@ -363,12 +402,16 @@ export function useSimulation() {
       }
     }
 
-    // When the user (as Duy) speaks, have 1-2 members react directly to it.
+    // Khi người điều hành (bạn) gõ một câu, SIMULATED Trần Đăng Duy lên tiếng
+    // trước để tiếp nhận/triển khai chỉ đạo, rồi 1-2 thành viên phản ứng theo.
     async function drainUserMsgs(topic: AgendaTopic) {
       while (alive() && pendingUserRef.current.length > 0) {
         const msg = pendingUserRef.current.shift()!
+        // 1) Trần Đăng Duy (giả lập) lên tiếng đáp lại chỉ đạo của bạn
+        await takeTurn('duc', topic, false, undefined, msg)
+        if (!alive()) return
+        // 2) rồi 1-2 thành viên phản ứng theo
         const members = PERSONAS.filter((p) => p.id !== 'duc').map((p) => p.id)
-        // shuffle, take 1-2 responders
         for (let i = members.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1))
           ;[members[i], members[j]] = [members[j], members[i]]

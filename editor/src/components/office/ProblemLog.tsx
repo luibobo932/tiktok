@@ -180,7 +180,7 @@ export default function ProblemLog({
         {problems.map((p) =>
           p.who === '_user' ? (
             <div key={p.id} style={{ alignSelf: 'flex-end', maxWidth: '90%', background: '#FE2C55', borderRadius: '10px 10px 2px 10px', padding: '7px 11px' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginBottom: 2 }}>🎙️ Bạn (Trưởng nhóm)</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginBottom: 2 }}>🎙️ Bạn (điều hành) → Duy</div>
               <div style={{ fontSize: 12, color: 'white', lineHeight: 1.45 }}>{p.message}</div>
             </div>
           ) : p.who === '_scenario' ? (
@@ -275,7 +275,7 @@ export default function ProblemLog({
                 cursor: 'pointer',
               }}
             >
-              {m === 'say' ? '🎙️ Nói với nhóm' : '⚡ Thả tình huống'}
+              {m === 'say' ? '🎙️ Chỉ đạo cho Duy' : '⚡ Thả tình huống'}
             </button>
           ))}
         </div>
@@ -286,7 +286,7 @@ export default function ProblemLog({
             onKeyDown={(e) => {
               if (e.key === 'Enter') submit()
             }}
-            placeholder={mode === 'say' ? 'Nhập vai trưởng nhóm, nói gì đó...' : 'VD: Có căn hot Q5 vừa giảm giá...'}
+            placeholder={mode === 'say' ? 'Chỉ đạo để Trần Đăng Duy lên tiếng...' : 'VD: Có căn hot Q5 vừa giảm giá...'}
             style={{
               flex: 1,
               background: 'rgba(255,255,255,0.08)',
