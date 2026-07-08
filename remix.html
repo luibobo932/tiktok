@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nhạc Chế Review Mixer</title>
+<style>
+  :root{
+    --bg:#0d0b1a; --bg2:#151228; --card:#1b1735; --card2:#221d42;
+    --accent:#ff2d78; --accent2:#7b2dff; --cyan:#22d3ee;
+    --text:#f2eeff; --muted:#9a92c4; --line:#2e2857; --ok:#2ee6a6;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,"Segoe UI",Roboto,Arial,sans-serif;
+    color:var(--text);
+    background:radial-gradient(1200px 800px at 15% -10%,#2a1550 0%,transparent 55%),
+               radial-gradient(1000px 700px at 110% 10%,#4a0e5c 0%,transparent 50%),
+               var(--bg);
+    min-height:100vh;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:28px 18px 80px}
+  header{text-align:center;margin-bottom:22px}
+  h1{
+    font-size:2rem;margin:0 0 6px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),var(--cyan));
+    -webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800;
+  }
+  .sub{color:var(--muted);font-size:.95rem;max-width:620px;margin:0 auto}
+  .card{
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;margin:16px 0;
+    box-shadow:0 12px 40px -20px #000;
+  }
+  .step{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .num{
+    width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;
+    font-weight:700;font-size:.85rem;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+  }
+  .step h2{font-size:1.05rem;margin:0}
+  .drop{
+    border:1.5px dashed var(--line);border-radius:12px;padding:20px;text-align:center;
+    cursor:pointer;transition:.15s;background:rgba(255,255,255,.02);
+  }
+  .drop:hover,.drop.drag{border-color:var(--accent);background:rgba(255,45,120,.06)}
+  .drop.loaded{border-style:solid;border-color:var(--ok)}
+  .drop .hint{color:var(--muted);font-size:.85rem;margin-top:4px}
+  .drop .fname{color:var(--ok);font-weight:600;word-break:break-all}
+  input[type=file]{display:none}
+  canvas.wave{width:100%;height:56px;display:block;margin-top:10px;border-radius:8px;background:#0e0b1f}
+  .row{display:flex;flex-wrap:wrap;gap:14px}
+  .row>div{flex:1 1 200px}
+  .btn{
+    border:none;border-radius:10px;padding:11px 18px;font-weight:700;font-size:.95rem;
+    cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    transition:.15s;
+  }
+  .btn:hover{filter:brightness(1.1)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;filter:none}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .btn.rec{background:linear-gradient(135deg,#ff3b3b,#c81d5c)}
+  .btn.rec.active{animation:pulse 1s infinite}
+  @keyframes pulse{50%{filter:brightness(1.4)}}
+  .btns{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  label.ctl{display:block;font-size:.85rem;color:var(--muted);margin:12px 0 4px}
+  label.ctl b{color:var(--text);float:right;font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--accent);height:4px}
+  .switch{display:flex;align-items:center;gap:8px;margin:10px 0;font-size:.9rem}
+  .switch input{width:38px;height:20px;appearance:none;background:var(--line);border-radius:20px;position:relative;cursor:pointer;transition:.2s}
+  .switch input:checked{background:var(--accent)}
+  .switch input::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s}
+  .switch input:checked::after{left:20px}
+  .bpm{
+    display:flex;align-items:baseline;gap:8px;justify-content:center;margin:6px 0;
+  }
+  .bpm .val{font-size:2.4rem;font-weight:800;color:var(--cyan);line-height:1}
+  .bpm .lab{color:var(--muted);font-size:.9rem}
+  .status{text-align:center;color:var(--muted);font-size:.88rem;min-height:20px;margin-top:8px}
+  .status.err{color:#ff7b9c}
+  .status.ok{color:var(--ok)}
+  .player{display:flex;align-items:center;gap:12px;margin-top:6px}
+  .player .time{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.85rem;min-width:92px}
+  .bar{flex:1;height:8px;background:var(--line);border-radius:8px;overflow:hidden;cursor:pointer}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--cyan))}
+  .foot{text-align:center;color:var(--muted);font-size:.8rem;margin-top:26px}
+  .foot a{color:var(--accent2)}
+  .disabledCard{opacity:.5;pointer-events:none}
+  .badge{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:.78rem;color:var(--muted);margin:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🎤 Nhạc Chế Review Mixer</h1>
+    <p class="sub">Đưa <b>nhạc gốc</b> và <b>bản review</b> của bạn vào, ứng dụng sẽ phân tích nhịp của nhạc gốc rồi trộn giọng review theo nhịp — cho ra một bản nhạc chế hoàn chỉnh. Chạy hoàn toàn trên trình duyệt, không tải dữ liệu lên server.</p>
+  </header>
+
+  <!-- STEP 1: NHẠC GỐC -->
+  <div class="card">
+    <div class="step"><div class="num">1</div><h2>Nhạc gốc</h2></div>
+    <div class="drop" id="dropMusic">
+      <div class="fname" id="nameMusic">Bấm để chọn file nhạc gốc</div>
+      <div class="hint">mp3, wav, m4a, ogg… (file nhạc bạn muốn chế theo)</div>
+    </div>
+    <input type="file" id="fileMusic" accept="audio/*" />
+    <canvas class="wave" id="waveMusic"></canvas>
+    <div class="bpm" id="bpmBox" style="display:none">
+      <span class="val" id="bpmVal">--</span><span class="lab">BPM (nhịp phát hiện)</span>
+    </div>
+  </div>
+
+  <!-- STEP 2: REVIEW -->
+  <div class="card">
+    <div class="step"><div class="num">2</div><h2>Bản review (giọng của bạn)</h2></div>
+    <div class="drop" id="dropVoice">
+      <div class="fname" id="nameVoice">Bấm để chọn file giọng review</div>
+      <div class="hint">Hoặc thu trực tiếp bằng micro bên dưới</div>
+    </div>
+    <input type="file" id="fileVoice" accept="audio/*" />
+    <div class="btns" style="margin-top:10px">
+      <button class="btn rec" id="btnRec">● Thu âm review</button>
+      <span class="status" id="recStatus" style="margin:0"></span>
+    </div>
+    <canvas class="wave" id="waveVoice"></canvas>
+  </div>
+
+  <!-- STEP 3: MIX SETTINGS -->
+  <div class="card" id="mixCard">
+    <div class="step"><div class="num">3</div><h2>Tùy chỉnh trộn</h2></div>
+    <div class="row">
+      <div>
+        <label class="ctl">Âm lượng nhạc gốc <b id="lMusic">80%</b></label>
+        <input type="range" id="gMusic" min="0" max="150" value="80" />
+        <label class="ctl">Âm lượng giọng review <b id="lVoice">120%</b></label>
+        <input type="range" id="gVoice" min="0" max="200" value="120" />
+        <label class="ctl">Mức né nhạc khi có giọng (ducking) <b id="lDuck">60%</b></label>
+        <input type="range" id="gDuck" min="0" max="100" value="60" />
+      </div>
+      <div>
+        <label class="ctl">Dịch giọng theo thời gian <b id="lOff">0.00s</b></label>
+        <input type="range" id="gOff" min="-4000" max="8000" value="0" step="10" />
+        <label class="ctl">Tốc độ giọng (khớp nhịp) <b id="lSpd">1.00x</b></label>
+        <input type="range" id="gSpd" min="60" max="160" value="100" />
+        <div class="switch"><input type="checkbox" id="cQuant" checked /><label for="cQuant">Căn giọng theo nhịp nhạc gốc (quantize)</label></div>
+        <div class="switch"><input type="checkbox" id="cLoop" checked /><label for="cLoop">Lặp nhạc gốc cho đủ độ dài giọng</label></div>
+      </div>
+    </div>
+    <div class="btns" style="margin-top:16px">
+      <button class="btn" id="btnMix">🎛️ Trộn nhạc</button>
+      <button class="btn ghost" id="btnPlay" disabled>▶ Nghe thử</button>
+      <button class="btn ghost" id="btnDownload" disabled>⬇ Tải bản chế (.wav)</button>
+    </div>
+    <div class="player" id="player" style="display:none">
+      <span class="time" id="tCur">0:00 / 0:00</span>
+      <div class="bar" id="seek"><i id="seekFill"></i></div>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="foot">
+    Mọi xử lý diễn ra ngay trên máy bạn. · <a href="index.html">Trang chủ</a>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const AC = window.AudioContext || window.webkitAudioContext;
+
+const state = {
+  music:null,      // AudioBuffer
+  voice:null,      // AudioBuffer
+  bpm:0,
+  beatOffset:0,    // seconds to first beat
+  mixed:null,      // rendered AudioBuffer
+  dirty:true,
+  preview:{ctx:null,src:null,startAt:0,offset:0,playing:false,raf:0},
+};
+
+/* ---------- File loading ---------- */
+async function fileToBuffer(file){
+  const ctx = new AC();
+  const arr = await file.arrayBuffer();
+  const buf = await ctx.decodeAudioData(arr);
+  ctx.close();
+  return buf;
+}
+
+function setStatus(msg, cls=""){ const s=$("status"); s.textContent=msg; s.className="status "+cls; }
+
+/* ---------- Waveform drawing ---------- */
+function drawWave(canvas, buffer, color){
+  const dpr = window.devicePixelRatio||1;
+  const w = canvas.clientWidth, h = 56;
+  canvas.width = w*dpr; canvas.height = h*dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,w,h);
+  if(!buffer) return;
+  const data = buffer.getChannelData(0);
+  const step = Math.max(1, Math.floor(data.length/w));
+  ctx.fillStyle = color;
+  const mid = h/2;
+  for(let x=0;x<w;x++){
+    let min=1,max=-1;
+    for(let j=0;j<step;j++){
+      const v = data[x*step+j]||0;
+      if(v<min)min=v; if(v>max)max=v;
+    }
+    const y1 = mid + min*mid*0.95;
+    const y2 = mid + max*mid*0.95;
+    ctx.fillRect(x, y1, 1, Math.max(1,y2-y1));
+  }
+}
+
+/* ---------- Tempo / beat detection ---------- */
+// Energy-based onset envelope + autocorrelation over 60-180 BPM.
+function detectTempo(buffer){
+  const sr = buffer.sampleRate;
+  const ch = buffer.getChannelData(0);
+  // downsample to mono envelope
+  const hop = Math.floor(sr*0.01); // 10ms frames
+  const n = Math.floor(ch.length/hop);
+  const env = new Float32Array(n);
+  for(let i=0;i<n;i++){
+    let sum=0;
+    for(let j=0;j<hop;j++){ const v=ch[i*hop+j]||0; sum+=v*v; }
+    env[i]=Math.sqrt(sum/hop);
+  }
+  // onset = positive difference (spectral-flux-like on energy)
+  const onset = new Float32Array(n);
+  for(let i=1;i<n;i++){ const d=env[i]-env[i-1]; onset[i]=d>0?d:0; }
+  // normalize
+  let mx=0; for(let i=0;i<n;i++) if(onset[i]>mx)mx=onset[i];
+  if(mx>0) for(let i=0;i<n;i++) onset[i]/=mx;
+
+  const fps = sr/hop; // frames per second
+  const minBpm=60, maxBpm=180;
+  const minLag=Math.floor(fps*60/maxBpm);
+  const maxLag=Math.floor(fps*60/minBpm);
+  let bestLag=minLag, bestScore=-1;
+  for(let lag=minLag; lag<=maxLag; lag++){
+    let s=0;
+    for(let i=lag;i<n;i++) s+=onset[i]*onset[i-lag];
+    // slight preference toward mid tempo to avoid octave errors
+    if(s>bestScore){ bestScore=s; bestLag=lag; }
+  }
+  let bpm = 60*fps/bestLag;
+  // fold into a musical range
+  while(bpm<70) bpm*=2;
+  while(bpm>170) bpm/=2;
+
+  // find beat phase: correlate onset with click train at detected period
+  const period = 60*fps/bpm;
+  let bestPhase=0, bestP=-1;
+  for(let ph=0; ph<period; ph++){
+    let s=0;
+    for(let k=0; ph+k*period<n; k++){
+      const idx=Math.round(ph+k*period);
+      if(idx<n) s+=onset[idx];
+    }
+    if(s>bestP){ bestP=s; bestPhase=ph; }
+  }
+  const beatOffset = bestPhase/fps;
+  return { bpm:Math.round(bpm*10)/10, beatOffset };
+}
+
+function beatGrid(bpm, offset, duration){
+  const period = 60/bpm;
+  const beats=[];
+  for(let t=offset; t<duration+period; t+=period) beats.push(t);
+  return beats;
+}
+
+/* ---------- Voice segment detection (for quantize) ---------- */
+function detectSegments(buffer){
+  const sr=buffer.sampleRate;
+  const ch=buffer.getChannelData(0);
+  const hop=Math.floor(sr*0.02); // 20ms
+  const n=Math.floor(ch.length/hop);
+  const rms=new Float32Array(n);
+  let mx=0;
+  for(let i=0;i<n;i++){
+    let s=0; for(let j=0;j<hop;j++){ const v=ch[i*hop+j]||0; s+=v*v; }
+    rms[i]=Math.sqrt(s/hop); if(rms[i]>mx)mx=rms[i];
+  }
+  const thr=mx*0.06;
+  const segs=[]; let inSeg=false, start=0;
+  const gapFrames=Math.floor(0.15*sr/hop);   // merge gaps < 150ms
+  const minFrames=Math.floor(0.08*sr/hop);   // drop < 80ms
+  let lastEnd=-999;
+  for(let i=0;i<n;i++){
+    if(rms[i]>thr){
+      if(!inSeg){
+        if(i-lastEnd<gapFrames && segs.length){ // merge with previous
+          inSeg=true; start=segs.pop().start*sr/hop;
+        } else { inSeg=true; start=i; }
+      }
+    } else if(inSeg){
+      // look ahead for gap
+      let quiet=true;
+      for(let k=1;k<=gapFrames && i+k<n;k++){ if(rms[i+k]>thr){quiet=false;break;} }
+      if(quiet){
+        if(i-start>=minFrames) segs.push({start:start*hop/sr, end:i*hop/sr});
+        inSeg=false; lastEnd=i;
+      }
+    }
+  }
+  if(inSeg && n-start>=minFrames) segs.push({start:start*hop/sr, end:n*hop/sr});
+  return segs.length?segs:[{start:0,end:buffer.duration}];
+}
+
+/* ---------- Envelope for ducking ---------- */
+function computeEnvelope(buffer, hopSec){
+  const sr=buffer.sampleRate;
+  const hop=Math.floor(sr*hopSec);
+  const chs=buffer.numberOfChannels;
+  const n=Math.floor(buffer.length/hop);
+  const env=new Float32Array(n);
+  for(let c=0;c<chs;c++){
+    const d=buffer.getChannelData(c);
+    for(let i=0;i<n;i++){
+      let s=0; for(let j=0;j<hop;j++){ const v=d[i*hop+j]||0; s+=v*v; }
+      const r=Math.sqrt(s/hop); if(r>env[i])env[i]=r;
+    }
+  }
+  // smooth (attack/release)
+  const smooth=new Float32Array(n);
+  let prev=0;
+  for(let i=0;i<n;i++){
+    const target=env[i];
+    const a = target>prev?0.6:0.08; // fast attack, slow release
+    prev = prev + (target-prev)*a;
+    smooth[i]=prev;
+  }
+  return {env:smooth, hop};
+}
+
+/* ---------- Build voice track (with speed + quantize) ---------- */
+function scheduleVoice(ctx, dest, totalDur){
+  const speed = state.speed;
+  const gain = ctx.createGain();
+  gain.gain.value = state.voiceGain;
+  gain.connect(dest);
+
+  if(state.quantize && state.bpm>0){
+    const beats = beatGrid(state.bpm, state.beatOffset, totalDur);
+    const segs = detectSegments(state.voice);
+    let prevEnd = state.voiceOffset;
+    segs.forEach(seg=>{
+      const dur=(seg.end-seg.start)/speed;
+      // desired output start = natural position shifted by offset
+      let desired = seg.start/speed + state.voiceOffset;
+      // snap to nearest beat
+      let best=desired, bd=1e9;
+      for(const b of beats){ const d=Math.abs(b-desired); if(d<bd){bd=d;best=b;} }
+      let start=Math.max(best, prevEnd);
+      if(start<0) start=0;
+      if(start>=totalDur) return;
+      const src=ctx.createBufferSource();
+      src.buffer=state.voice;
+      src.playbackRate.value=speed;
+      src.connect(gain);
+      src.start(start, seg.start, seg.end-seg.start);
+      prevEnd=start+dur;
+    });
+  } else {
+    const src=ctx.createBufferSource();
+    src.buffer=state.voice;
+    src.playbackRate.value=speed;
+    src.connect(gain);
+    const start=Math.max(0,state.voiceOffset);
+    src.start(start);
+  }
+}
+
+/* ---------- Full offline render ---------- */
+async function renderMix(){
+  const sr = state.music.sampleRate;
+  const speed = state.speed;
+  const voiceOutDur = state.voice.duration/speed;
+
+  // total duration
+  let total;
+  if(state.loop){
+    total = Math.max(state.music.duration, state.voiceOffset + voiceOutDur + 1.5);
+  } else {
+    total = Math.max(state.music.duration, state.voiceOffset + voiceOutDur);
+  }
+  total = Math.max(total, 1);
+  const len = Math.ceil(total*sr);
+
+  // PASS 1: render voice-only to get envelope for ducking
+  const vctx = new OfflineAudioContext(2, len, sr);
+  scheduleVoice(vctx, vctx.destination, total);
+  const voiceBuf = await vctx.startRendering();
+  const {env, hop} = computeEnvelope(voiceBuf, 0.02);
+  let envMax=0.0001; for(const v of env) if(v>envMax)envMax=v;
+
+  // PASS 2: final mix
+  const ctx = new OfflineAudioContext(2, len, sr);
+
+  // music (looped or once)
+  const m = ctx.createBufferSource();
+  m.buffer = state.music;
+  m.loop = state.loop;
+  const mGain = ctx.createGain();
+  m.connect(mGain);
+
+  // ducking automation on music gain
+  const base = state.musicGain;
+  const duck = state.duck; // 0..1 how much to reduce
+  mGain.gain.setValueAtTime(base, 0);
+  const stepT = hop/sr;
+  for(let i=0;i<env.length;i++){
+    const t=i*stepT;
+    const activity=Math.min(1, env[i]/envMax);
+    const g = base*(1 - duck*activity);
+    mGain.gain.linearRampToValueAtTime(g, t);
+  }
+
+  // voice from pass-1 buffer
+  const v = ctx.createBufferSource();
+  v.buffer = voiceBuf;
+
+  // master + limiter to avoid clipping
+  const master = ctx.createGain(); master.gain.value=0.95;
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value=-2; limiter.knee.value=0; limiter.ratio.value=20;
+  limiter.attack.value=0.003; limiter.release.value=0.15;
+
+  mGain.connect(master);
+  v.connect(master);
+  master.connect(limiter);
+  limiter.connect(ctx.destination);
+
+  m.start(0);
+  v.start(0);
+  return await ctx.startRendering();
+}
+
+/* ---------- WAV encode ---------- */
+function encodeWAV(buffer){
+  const numCh=buffer.numberOfChannels, sr=buffer.sampleRate;
+  const len=buffer.length;
+  const out=new ArrayBuffer(44+len*numCh*2);
+  const view=new DataView(out);
+  const wstr=(o,s)=>{for(let i=0;i<s.length;i++)view.setUint8(o+i,s.charCodeAt(i));};
+  wstr(0,"RIFF"); view.setUint32(4,36+len*numCh*2,true); wstr(8,"WAVE");
+  wstr(12,"fmt "); view.setUint32(16,16,true); view.setUint16(20,1,true);
+  view.setUint16(22,numCh,true); view.setUint32(24,sr,true);
+  view.setUint32(28,sr*numCh*2,true); view.setUint16(32,numCh*2,true);
+  view.setUint16(34,16,true); wstr(36,"data"); view.setUint32(40,len*numCh*2,true);
+  let off=44;
+  const chans=[]; for(let c=0;c<numCh;c++) chans.push(buffer.getChannelData(c));
+  for(let i=0;i<len;i++){
+    for(let c=0;c<numCh;c++){
+      let s=Math.max(-1,Math.min(1,chans[c][i]));
+      view.setInt16(off, s<0?s*0x8000:s*0x7fff, true); off+=2;
+    }
+  }
+  return new Blob([out],{type:"audio/wav"});
+}
+
+/* ---------- Preview playback (of mixed buffer) ---------- */
+function stopPreview(){
+  const p=state.preview;
+  if(p.src){ try{p.src.stop()}catch(e){} p.src=null; }
+  if(p.raf) cancelAnimationFrame(p.raf);
+  p.playing=false;
+  $("btnPlay").textContent="▶ Nghe thử";
+}
+function playPreview(from=null){
+  if(!state.mixed) return;
+  const p=state.preview;
+  if(!p.ctx) p.ctx=new AC();
+  if(p.ctx.state==="suspended") p.ctx.resume();
+  stopPreview();
+  const src=p.ctx.createBufferSource();
+  src.buffer=state.mixed;
+  src.connect(p.ctx.destination);
+  const offset = from!=null ? from : p.offset;
+  p.src=src; p.startAt=p.ctx.currentTime; p.offset=offset; p.playing=true;
+  src.start(0, offset);
+  src.onended=()=>{ if(p.playing){ p.offset=0; stopPreview(); updateSeek(0);} };
+  $("btnPlay").textContent="⏸ Tạm dừng";
+  tick();
+}
+function tick(){
+  const p=state.preview;
+  if(!p.playing) return;
+  const cur = p.offset + (p.ctx.currentTime - p.startAt);
+  updateSeek(cur);
+  p.raf=requestAnimationFrame(tick);
+}
+function fmt(t){ t=Math.max(0,t|0); return (t/60|0)+":"+String(t%60).padStart(2,"0"); }
+function updateSeek(cur){
+  const dur=state.mixed?state.mixed.duration:0;
+  $("seekFill").style.width=(dur?Math.min(100,cur/dur*100):0)+"%";
+  $("tCur").textContent=fmt(cur)+" / "+fmt(dur);
+}
+
+/* ---------- Wiring: file inputs & drops ---------- */
+function setupDrop(dropId, inputId, onFile){
+  const drop=$(dropId), input=$(inputId);
+  drop.onclick=()=>input.click();
+  input.onchange=e=>{ if(e.target.files[0]) onFile(e.target.files[0]); };
+  ["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag");}));
+  ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag");}));
+  drop.addEventListener("drop",e=>{ if(e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); });
+}
+
+async function loadMusic(file){
+  $("nameMusic").textContent="Đang xử lý…";
+  try{
+    state.music=await fileToBuffer(file);
+    $("dropMusic").classList.add("loaded");
+    $("nameMusic").textContent="🎵 "+file.name;
+    drawWave($("waveMusic"), state.music, "#7b2dff");
+    setStatus("Đang phân tích nhịp…");
+    await new Promise(r=>setTimeout(r,30));
+    const {bpm,beatOffset}=detectTempo(state.music);
+    state.bpm=bpm; state.beatOffset=beatOffset;
+    $("bpmBox").style.display="flex";
+    $("bpmVal").textContent=bpm;
+    setStatus("Đã phát hiện nhịp ~"+bpm+" BPM. Nhịp đầu tại "+beatOffset.toFixed(2)+"s.","ok");
+    state.dirty=true;
+  }catch(e){
+    $("nameMusic").textContent="Bấm để chọn file nhạc gốc";
+    setStatus("Không đọc được file nhạc: "+e.message,"err");
+  }
+}
+async function loadVoice(file){
+  $("nameVoice").textContent="Đang xử lý…";
+  try{
+    state.voice=await fileToBuffer(file);
+    $("dropVoice").classList.add("loaded");
+    $("nameVoice").textContent="🎙️ "+file.name;
+    drawWave($("waveVoice"), state.voice, "#ff2d78");
+    state.dirty=true;
+    setStatus("Đã nạp bản review.","ok");
+  }catch(e){
+    $("nameVoice").textContent="Bấm để chọn file giọng review";
+    setStatus("Không đọc được file giọng: "+e.message,"err");
+  }
+}
+
+setupDrop("dropMusic","fileMusic",loadMusic);
+setupDrop("dropVoice","fileVoice",loadVoice);
+
+/* ---------- Mic recording ---------- */
+let mediaRec=null, recChunks=[], recStream=null;
+$("btnRec").onclick=async()=>{
+  const btn=$("btnRec");
+  if(mediaRec && mediaRec.state==="recording"){
+    mediaRec.stop();
+    return;
+  }
+  try{
+    recStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    mediaRec=new MediaRecorder(recStream);
+    recChunks=[];
+    mediaRec.ondataavailable=e=>{ if(e.data.size)recChunks.push(e.data); };
+    mediaRec.onstop=async()=>{
+      btn.classList.remove("active"); btn.textContent="● Thu âm review";
+      $("recStatus").textContent="";
+      recStream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(recChunks,{type:recChunks[0]?.type||"audio/webm"});
+      const file=new File([blob],"review-thu-am.webm",{type:blob.type});
+      await loadVoice(file);
+    };
+    mediaRec.start();
+    btn.classList.add("active"); btn.textContent="■ Dừng thu";
+    $("recStatus").textContent="Đang thu… (nói phần review của bạn)";
+  }catch(e){
+    $("recStatus").textContent="Không truy cập được micro: "+e.message;
+  }
+};
+
+/* ---------- Sliders ---------- */
+function readSettings(){
+  state.musicGain = +$("gMusic").value/100;
+  state.voiceGain = +$("gVoice").value/100;
+  state.duck      = +$("gDuck").value/100;
+  state.voiceOffset = +$("gOff").value/1000;
+  state.speed     = +$("gSpd").value/100;
+  state.quantize  = $("cQuant").checked;
+  state.loop      = $("cLoop").checked;
+}
+const bind=(id,fn)=>{ const el=$(id); el.addEventListener("input",()=>{fn(el.value); state.dirty=true; markDirty();}); };
+function markDirty(){
+  if(state.mixed){ setStatus("Đã đổi thiết lập — bấm \"Trộn nhạc\" để cập nhật."); }
+}
+bind("gMusic",v=>$("lMusic").textContent=v+"%");
+bind("gVoice",v=>$("lVoice").textContent=v+"%");
+bind("gDuck",v=>$("lDuck").textContent=v+"%");
+bind("gOff",v=>$("lOff").textContent=(v/1000).toFixed(2)+"s");
+bind("gSpd",v=>$("lSpd").textContent=(v/100).toFixed(2)+"x");
+["cQuant","cLoop"].forEach(id=>$(id).addEventListener("change",()=>{state.dirty=true;markDirty();}));
+
+/* ---------- Mix / Play / Download ---------- */
+$("btnMix").onclick=async()=>{
+  if(!state.music){ setStatus("Hãy chọn nhạc gốc trước.","err"); return; }
+  if(!state.voice){ setStatus("Hãy chọn hoặc thu bản review trước.","err"); return; }
+  readSettings();
+  stopPreview();
+  $("btnMix").disabled=true; setStatus("Đang trộn nhạc…");
+  try{
+    await new Promise(r=>setTimeout(r,20));
+    state.mixed=await renderMix();
+    state.dirty=false;
+    state.preview.offset=0;
+    $("btnPlay").disabled=false;
+    $("btnDownload").disabled=false;
+    $("player").style.display="flex";
+    updateSeek(0);
+    setStatus("Xong! Bản chế dài "+fmt(state.mixed.duration)+". Nghe thử hoặc tải về.","ok");
+  }catch(e){
+    setStatus("Lỗi khi trộn: "+e.message,"err");
+  }finally{
+    $("btnMix").disabled=false;
+  }
+};
+$("btnPlay").onclick=()=>{
+  const p=state.preview;
+  if(p.playing){ p.offset += p.ctx.currentTime-p.startAt; stopPreview(); }
+  else playPreview();
+};
+$("seek").onclick=e=>{
+  if(!state.mixed) return;
+  const r=$("seek").getBoundingClientRect();
+  const frac=(e.clientX-r.left)/r.width;
+  const to=frac*state.mixed.duration;
+  state.preview.offset=to;
+  if(state.preview.playing) playPreview(to); else updateSeek(to);
+};
+$("btnDownload").onclick=()=>{
+  if(!state.mixed) return;
+  const blob=encodeWAV(state.mixed);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="nhac-che-review.wav";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+};
+
+window.addEventListener("resize",()=>{
+  if(state.music) drawWave($("waveMusic"),state.music,"#7b2dff");
+  if(state.voice) drawWave($("waveVoice"),state.voice,"#ff2d78");
+});
+readSettings();
+</script>
+</body>
+</html>
